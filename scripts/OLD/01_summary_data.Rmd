@@ -1,0 +1,112 @@
+---
+title: "Emergency psychology"
+author: "[Corrado Caudek](https://ccaudek.github.io/)"
+date: "First version 2019-02-14. Last modified `r format(Sys.time(), '%Y-%m-%d')`"
+output:
+  html_document:
+    fig_caption: yes
+    highlight: pygments
+    toc: TRUE
+    toc_depth: 2
+    number_sections: TRUE
+    toc_float:
+      smooth_scroll: FALSE
+---
+
+# Set up
+
+```{r setup, include=FALSE}
+library("here")
+```
+
+## Packages
+```{r}
+library("googlesheets")
+library("tidyverse")
+```
+
+Which google sheets do you have access to?
+```{r}
+gs_ls()
+```
+
+Get the google sheet
+```{r}
+thedat <- gs_title("Sei un soccorritore in Emergenza? (Risposte)")
+```
+
+List worksheets
+```{r}
+gs_ws_ls(thedat)
+```
+
+Get data and convert to data.frame
+```{r}
+dat <- gs_read(ss=thedat, ws = "Risposte del modulo 1", skip=1)
+df <- as.data.frame(dat)
+```
+
+Rename variables
+```{r}
+df <- df %>% 
+  rename(
+    date = `18/01/2019 18.37.49`,
+    permission = `Non acconsento`,
+    id = AF213019,
+    gender = Femmina,
+    education = `Laurea magistrale`,
+    employment = Operaio,
+    is_rescue_worker = Sì,
+    red_cross_commeetee_location = grosseto,
+    rescue_worker_qualification = Si, 
+    years_of_experience = `1`,
+    last_training = `Meno di 1 anno fa`,
+    rate_of_activity = `1 turno a settimana`,
+    job_qualification = Soccorritore,
+    is_job_qualification_invariant= Sì_1, 
+    work_with_same_team = No,
+    age = X231
+  ) 
+```
+
+The data.frame contains the following scales:
+
+- NEO_FFI_60: 60 items, from X16 to X76
+- COPE_NVI: 60 items
+- PTGI: 29 items
+- IES_R: 28 items
+- SCS: 26 items
+- MSPSS: 12 items
+
+
+Let start with the coding of neo_ffi_60. First, we select the right columns:
+```{r}
+neo_ffi_60 <- df %>% 
+  select(X16:X75)
+```
+
+Then we change the column names to facilitate coding
+```{r}
+item_names <- paste0("i", 1:60)
+names(neo_ffi_60) <- item_names
+```
+
+Some items are reversed. In that cases, we can compute the right value by using the following formula: abs(x - max).
+
+The first subscale of neo_ffi_60 is called negative affect. The scores on such scale are the following:
+
+```{r}
+negative_affect <- 
+  abs(neo_ffi_60$i1 - 4) + neo_ffi_60$i11 + abs(neo_ffi_60$i16 - 4) + 
+  abs(neo_ffi_60$i31 - 4) + abs(neo_ffi_60$i46 - 4)
+```
+
+Just to take a look to the data, an histogram of negative affect is
+```{r}
+hist(negative_affect)
+```
+
+```{r}
+neuroticism <- negative_affect + self_reproach
+```
+

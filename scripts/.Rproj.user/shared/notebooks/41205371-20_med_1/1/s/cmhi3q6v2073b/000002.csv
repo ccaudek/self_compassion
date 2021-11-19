@@ -1,0 +1,4 @@
+"0","```r
+set.seed(1234)
+fit5 <- sem(mediation_model, data = df5)
+```"

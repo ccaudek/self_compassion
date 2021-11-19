@@ -1,0 +1,30 @@
+TITLE: 2 factor bi-factor ESEM.
+
+DATA:
+  FILE IS scs.dat;
+  
+VARIABLE:
+  NAMES ARE u1-u26; 
+  MISSING ARE ALL(-9);
+  USEVARIABLES ARE u1-u26;
+  CATEGORICAL ARE u1-u26;
+
+ANALYSIS: 
+  ESTIMATOR = WLSMV; 
+  ROTATION = oblimin; 
+  
+MODEL:
+  F1 BY u1@.49 u2@.78 u3@.22 u4@.78 u5@.13 u6@.79 u7@.33 u8@.70 u9@.07 u10@.24
+        u11@.68 u12@-.03 u13@.71 u14@-.17 u15@.02 u16@.69 u17@-.2 u18@.77
+        u19@-.06 u20@.64 u21@.56 u22@-.05 u23@-.22 u24@0.62 u25@.75 u26@-.06;
+  F2 BY u1@.06 u2@-.05 u3@.41 u4@-.070 u5@.65 u6@-.03 u7@0.49 u8@.01 u9@0.46 u10@0.55 
+        u11@.02 u12@.69 u13@-.04 u14@0.47 u15@0.66 u16@-0.01 u17@0.58 u18@0.03 
+        u19@0.70 u20@0.07 u21@0.02 u22@0.65 u23@0.56 u24@-0.01 u25@-0.04 u26@0.64;
+  F1@1;
+  F2@1;
+  
+OUTPUT: stdyx;
+
+
+
+

@@ -1,0 +1,17 @@
+TITLE: Bifactor model.
+
+DATA:
+FILE is  selfcomp.dat;
+
+VARIABLE:
+NAMES ARE u1-u26;
+USEVARIABLES ARE u1-u26;
+CATEGORICAL = u1-u26;
+
+MODEL:
+F1-F2 BY u1-u26(*1);
+FG BY u1-u26*;
+FG@1;
+FG WITH F1-F2@0;
+
+OUTPUT: STDYX;

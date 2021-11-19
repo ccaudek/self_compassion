@@ -1,0 +1,1521 @@
+---
+title: "Supplemental Materials to Accompany: Self-compassion"
+author: "Masked for Review"
+date: '`r format(Sys.Date(), "%d %B %Y")`'
+geometry: margin = 1in
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    fig_caption: TRUE  
+    toc: TRUE
+    toc_depth: 3
+    keep_tex: TRUE
+header-includes:
+   - \usepackage{setspace}
+   - \usepackage{caption}
+   - \usepackage{float}
+   - \usepackage{fontspec}
+   - \usepackage{pdflscape}
+   - \doublespacing
+   - \floatplacement{figure}{H}
+params:
+  SavePlots: FALSE ## Save plots to external files
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+\newpage
+
+```{r setup, echo = TRUE, warning = FALSE, message = FALSE}
+## ~~~~~~~~~~~~~~~~~~ ##
+#### Setup R Script ####
+## ~~~~~~~~~~~~~~~~~~ ##
+
+## Set default knitr options for R Markdown
+knitr::opts_chunk$set(echo    = TRUE,
+                      cache   = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+
+## ~~~~~~~~~~~~~~~~~ ##
+#### Load Packages ####
+## ~~~~~~~~~~~~~~~~~ ##
+
+## If pacman is not installed, install it
+if (!require("pacman")) install.packages("pacman")
+
+## Load required packages
+pacman::p_load(kableExtra, ## Format tables in latex
+               psychmeta,  ## Composite correlation
+               # stargazer,  ## Simple tables of regression output
+               # tidyverse,  ## Data and string manipulation
+               fungible,   ## Conduct factor analyses
+               magrittr,   ## Use the pipe operator
+               ggplot2,    ## Create plots
+               stringr,    ## String manipulation
+               ggExtra,    ## Marginal boxplot added to ggplot
+               readxl,     ## Load data from Microsoft Excel file
+               psych,      ## Misc analyses (parallel analysis)
+               knitr,      ## LaTeX friendly tables
+               dplyr,      ## Data wrangling
+               here)       ## Load scripts dynamically
+
+## Set the seed for reproducibility
+SEED <- 123
+
+## Set the particular type of random number generator
+set.seed(seed = SEED,
+         kind = "L'Ecuyer-CMRG")
+
+```
+
+```{r User Written Functions}
+## ~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+#### Define User Functions ####
+## ~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+## This function is internal to fungible::faMain() but used as a standalone function.
+
+## Guttman's Factor Indeterminacy Index
+factorIndeterminacy <- function(Lambda, 
+                                PhiMat,
+                                SampCorr) {
+  ## Purpose: Compute Guttman (1955) factor indeterminacy index
+  ##
+  ## Args:    Lambda:   (Matrix) Rotated factor loadings matrix
+  ##          PhiMat:   (Matrix) Factor correlation matrix
+  ##          SampCorr: (Matrix) Sample correlation matrix
+  
+  ## Fator structure matrix (for either oblique, orthogonal, or bifactor model)
+  facStruct <- Lambda %*% PhiMat
+  
+  ## If SampleCorr is non-positive definite (non invertible), give error
+  Rinv <- try(solve(SampCorr), silent = TRUE)
+  
+  if ( class(Rinv) == "try-error") {
+    ## If non-invertible, give a warning
+    warning("\n\nEncountered a singular R matrix when computing 
+            factor indeterminancy values\n")
+    
+    ## Return a vector of NAs rather that indeterminacy values
+    return( rep(NA, ncol(Lambda) ) )
+    
+  } # END if ( class(Rinv) == "try-error") 
+  
+  ## Factor indeterminacy solution
+  sqrt( diag( t(facStruct) %*% Rinv %*% facStruct))
+  
+} # END factorIndeterminacy
+
+## Create fac scores by unit weighting everything, using arbitrar cutoff value
+UnitWeightFacScore <- function(stndData,      ## Standardized subject responses
+                               Lambda,        ## Bifactor loadings matrix
+                               FacLoadCutoff = .30) {  ## Cutoff value to use
+  ## Purpose: Compute unit-weighted factor scores
+  ##
+  ## Args:    stndData:      (Matrix) subject scale scores in Z-score form
+  ##          Lambda:        (Matrix) Bifactor loadings matrix
+  ##          FacLoadCutoff: (Scalar) Fac loading cut-off score, default of .30
+  ##
+  ## Output:  scores:        (Matrix) Est subject scores on each factor 
+  ##          r.scores:      (Matrix) Cor among the estimated factor scores
+  ##
+  
+  ## Simple error check, is column order held constant across matrices?
+  if (all.equal(colnames(stndData), rownames(Lambda)) == FALSE) {
+    stop("Bifactor model and raw data do not have consistent variable order")
+  } # END if (all.equal(colnames(scaleData), rownames(ConscDSL)) == FALSE) 
+  
+  ## Create a signed matrix marking which indicators load onto which factors
+  signMatrix <- Lambda
+  
+  ## All loadings, in absolute value >= cutoff set to 1
+  signMatrix[abs(signMatrix) >= FacLoadCutoff] <- 1
+  
+  ## All other loadings, set to zero
+  signMatrix[signMatrix != 1] <- 0
+  
+  ## Place original signs back in if negative loadings exist
+  signMatrix <- signMatrix * sign(Lambda)
+  
+  ## Create unit weighted factor scores for each factor
+  FacScores <- stndData %*% signMatrix
+  
+  ## Find the intercorrelations among factor scores
+  rFacScores <- cor(FacScores)
+  
+  ## Compile results into a list
+  list("scores"   = FacScores,
+       "r.scores" = rFacScores)
+  
+} # END UnitWeightFacScore
+
+```
+
+# Description of the Online Supplement
+
+This online supplement contains all of the code used to analyze the two
+datasets included in the manuscript. All code is accompanied by comments
+to at least generally describe the rationale and purpose for each line
+or section of code.
+
+The online supplement is split into separate sections. The first section
+details the results of the re-analyzed Toker & Ackerman (2012)
+vocational interests data using a bifactor model. The second section
+details the bifactor analyses conducted on the developmental performance
+dataset (Hoffman et al., 2010). The Third section includes all conducted
+analyses of the conscientiousness (personality) dataset.
+
+# Reanalysis of Toker & Ackerman (2012)
+
+In their study assessing STEM student interest in complex careers, Toker
+and Ackerman (2012) report the results of an oblique factor analysis.
+Using their obtained factor pattern and factor correlation matrix, we
+can conduct a second-order factor analysis and transform the pattern of
+loadings using the Schmid-Leiman procedure.
+
+Note that the authors did not give more specification to how their
+correlated factor model was estimated (e.g., which oblique rotation, the
+criterion for factor extraction convergence). Below, we applied
+principal axis factoring, the same factor extraction method used by
+Toker and Ackerman (2012).
+
+# Developmental Performance Data
+
+## Data Wrangling
+
+The Hoffman et al (2010) dataset includes managerial performance
+evaluation ratings (for developmental, non-administrative purposes) from
+seven different sources. Those raters are as follows: two bosses, two
+peers, two subordinates, and self-reported performance ratings. All
+raters assessed many different items that were aggregated into three
+subdimensions of performance: technical performance, interpersonal
+performance, and leadership performance.
+
+For the manuscript, we computed composite correlations for all three
+rating sources that provided two ratings (i.e., bosses, peers, and
+subordinates). Considering that each rater provided scores on three
+subdimensions, the four (three composited + one self-report) rating
+sources yielded a total of 12 factor indicators (i.e., observed
+variables).
+
+The following code reproduces the published correlation matrix then it
+computes the composite correlations. The composited intercorrelation
+matrix is printed below.
+
+## Dimensionality Detection
+
+The number of dimensions (i.e., the number of factors to retain) was
+determined via multiple methods. Though we primarily relied on deductive
+reasoning, we also provide code to demonstrate how to quantify the
+number of dimensions.
+
+### Scree Plot
+
+A scree plot for common factor models require the communality values to
+be placed on the main diagonal. Generally, communalities are
+estimated---via the squared multiple correlation (SMC). Here, however,
+we know the true number of factors so we can directly compute the
+communalities (i.e., by conducting a factor analysis with the correct
+number of dimensions and determine communalities directly. Communalities
+are invariant under rotation). Nevertheless, code is provided to
+estimate communalities via the SMC approach.
+
+The scree plot showed two steep drop-offs in eigenvalues. The first
+eigenvalue is notably larger indicating that the first-order common
+factors are indeed correlated. The second drop-off denotes that there
+are four common factor present and the remaining eigenvalues are
+negligible in magnitude. Given the large dataset, eigenvalues have low
+sampling variability so it is easy to see that four factors should be
+extracted.
+
+```{r Performance Scree Plots}
+## ~~~~~~~~~~~~~~ ##
+#### Scree Plot ####
+## ~~~~~~~~~~~~~~ ##
+
+SCS_corr_mat <- lavaan::lavCor(d, ordered = names(d))
+
+
+
+## Directly compute the communalities (rather than estimate) 
+## Communalities are invariant under rotation, no need to rotate
+## We already know the model has 4 factors (i.e., rating sources)
+faUnrotatedOutput <- faMain(R          = SCS_corr_mat, 
+                            numFactors = 6, 
+                            rotate     = "none")
+
+## Compute communalities (sum of squared loadings in each row)
+HierCommunalities <- apply(faUnrotatedOutput$loadings^2, 1, sum)
+
+## Estimate communality via squared multiple correlation (SMC)
+# HierCommunalities <- 1 - 1 / diag(solve(HoffmanCorrMat))
+
+## Reduce diagonal of correlation matrix to estimated communalities
+ReducedHoffCorr <- SCS_corr_mat - diag(1 - HierCommunalities)
+
+## Plot the eigenvalues of the reduced correlation matrix
+eigen(ReducedHoffCorr)$val %>% 
+  plot(type = "b", ## Line connecting points on plot
+       main = "Scree Plot: Performance Data",
+       xlab = "Factor number",
+       ylab = "Eigenvalue for each factor",
+       ylim = c(-.80, 9))
+```
+
+### Parallel Analysis
+
+Though we did not rely on parallel analyses to determine the
+dimensionality of the performance data, we provide that code below for
+illustrative purposes.
+
+Note that in large samples, parallel analyses are prone to
+over-extracting the number of factors. The mechanics of parallel
+analysis requires sampling of random correlation matrices to find the
+distribution of eigenvalues for random data. As expected, parallel
+analysis recommended the overextraction of factors. Specifically, it
+recommended the extraction of six factors, two more than were actually
+extracted. Note that with 12 variables, a maximum of seven factors can
+be extracted while still yielding an identified first-order model.
+
+```{r Performance Parallel Analysis}
+
+## Maximum number of first-order factors to extract for an identified solution
+# Ledermann(numVariables = nrow(HoffmanCorrMat))$numFactors
+
+## ~~~~~~~~~~~~~~~~~~~~~ ##
+#### Parallel Analysis ####
+## ~~~~~~~~~~~~~~~~~~~~~ ##
+
+# Parallel analysis of the Hoffman et al data set
+psych::fa.parallel(x           = SCS_corr_mat,
+                   n.obs       = 744,
+                   fa          = "fa",
+                   fm          = "uls",  
+                   SMC         = TRUE,
+                   n.iter      = 50,
+                   show.legend = FALSE,
+                   main        = "Parallel Analysis: Hierarchical Data")
+```
+
+### Empirical Kaiser Criterion
+
+The empirical Kaiser criterion (EKC) is a recent advancement of the
+popular Kaiser criterion (i.e., retaining all factors with eigenvalues
+\> 1.0). Kaiser's criterion is frequently found to be inaccurate due to
+(a) failing to account for sampling variability in eigenvalues and (b)
+the serial nature of eigenvalues (e.g., the eigenvalue of the $n^{th}$
+factor depends, in part, on the eigenvalue of the $(n-1)^{th}$ factor).
+
+```{r Performance EKC Analysis}
+## ~~~~~~~~~~~~ ##
+#### EKC Plot ####
+## ~~~~~~~~~~~~ ##
+
+## Determine the dimensionality from the EKC procedure
+perfEKC <- faEKC(R     = SCS_corr_mat,
+                 NSubj = 744,
+                 Plot  = TRUE)
+```
+
+## Detecting local minima problems
+
+Due to space limitations, we were unable to describe the issue of local
+minima in factor analysis (and its relevance to bifactor models more
+specifically). The oblique geomin rotation is prone to yielding local
+solutions. Local solutions mean that applying several geomin rotations
+from different starting values might yield multiple *different*
+solutions. In oversimplified terms, these result from the optimization
+routine--a routine seeking to minimize a non-smooth function--getting
+'stuck' in a local minima rather than finding *the* minimum. Thus, to
+increase our chance of reporting the solution from the global minimum,
+we conduct all rotations 100 times and retain the solution with the
+smallest discrepancy function. For more details, see the help
+documentation for the faMain function.
+
+The code below conducted the first step of a Schmid-Leiman
+transformation. Namely, the code estimated a first-order correlated
+factor model--one factor for each proposed group factor. Note that local
+minima cannot be found in the second-order factor model *in the case of
+one general factor*. This is because no rotation is applied in
+one-factor models.
+
+```{r Performance Detect Local Minima}
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+#### Local Minima Detection ####
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Conduct 1st-order factor analysis of a multi-order SL solution
+perfDetectLocalMin <- 
+  faMain(R             = SCS_corr_mat,
+         numFactors    = 4,
+         facMethod     = "fals",
+         rotate        = "geominQ",
+         rotateControl = 
+           list(numberStarts = 100,   ## Random start configs
+                delta        = .01,   ## Geomin tuning param
+                standardize  = "none"))
+
+## If multiple local solutions found, give a warning
+if (perfDetectLocalMin$numLocalSets > 1) {
+  cat("Multiple local solutions found. 
+      Consider applying a Cureton-Mulaik standardization procedure.")
+} # END if (perfDetectLocalMin$numLocalSets > 1)
+
+```
+
+## Comparing Oblique Rotations with the Schmid-Leiman Procedure
+
+The code below reproduces the second figure in the manuscript comparing
+general factor saturations of 1,001 oblique rotations in the
+higher-order factor model. All factors were estimated by an ordinary
+least squares extraction algorithm. An oblique Crawford-Ferguson (CF)
+rotation was applied to each obtained first-order factor model.
+Specifically, CF rotations apply a tuning parameter ($\kappa$) that
+proportionally weights the minimization of either column complexity
+(i.e., finding as many zero factor loadings in each column as possible)
+or row complexity (i.e., finding as many zero factor loadings per row as
+possible). A CF $\kappa$ value of zero seeks to purely minimize row
+complexity whereas a value of 1.0 purely minimizes column complexity. A
+$kappa$ value of .50 gives equal weight to minimizing both. $\kappa$
+values can therefore be interpreted as the proportion of weight given to
+minimizing row complexity in the rotational criterion.
+
+```{r Rotational Indeterminacy}
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+#### Rotational Indeterminacy ####
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Create a vector of the Crawford-Ferguson tuning parameters (range from 0 to 1)
+CFKappa <- seq(from       = 0,
+               to         = 1,
+               length.out = 10) ## Equal increments
+
+## The number of kappa parameterizations to iterate across
+numKappaParams <- length(CFKappa)
+
+## Pre-allocate a vector to store factor analytic results for each kappa parameterization
+resultsVector <- rep(NA, numKappaParams)
+
+## Combine the kappa parameter with its resultant general factor saturation index
+resultsDF <- data.frame("Kappa"  = CFKappa,
+                        "OmegaG" = resultsVector)
+
+## A for-loop structure to analyze Hoffman's data using CF kappa param
+for (iterCFParam in 1:numKappaParams) { 
+
+  ## Set seed for reproducibility purposes
+  set.seed(iterCFParam * 123)
+
+  ## Schmid-Leiman rotation using the CF family of oblique rotations
+  FAOutput <-
+    SchmidLeiman(R             = SCS_corr_mat,
+                 numFactors    = c(4, 1),
+                 facMethod     = "fals",
+                 rotate        = "cfQ",
+                 rotateControl =
+                   list(numberStarts = 20,
+                        kappa        = CFKappa[iterCFParam],
+                        standardize  = "none"))$B
+
+  ## Compute the general factor saturation within the estimated bifactor model
+  GenFacSatur <- Omega(lambda = FAOutput,
+                       genFac = 1)$OmegaGeneral
+
+  ## Save the output in the allotted results vector
+  resultsDF$OmegaG[iterCFParam] <- GenFacSatur
+
+  ## Print statement showing iteration progression
+  # cat("Finished condition number:", iterCFParam, "of", numKappaParams, "conditions \n")
+
+} # END for (iterCFParam in seq_along(numKappaParams))
+
+
+## Compare CF rotations with geominQ
+## Geomin is not in the CF family of rotations, hence it is estimated separately
+geominSL <-
+  SchmidLeiman(R             = SCS_corr_mat,
+               numFactors    = c(4, 1),
+               facMethod     = "fals",
+               rotate        = "geominQ",
+               rotateControl =
+                 list(numberStarts = 20,
+                      kappa        = CFKappa[iterCFParam],
+                      standardize  = "none"))$B %>%
+  Omega(lambda = ., genFac = 1)
+```
+
+```{r Plot factor saturation by CF tuning parameters}
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+#### Plot Factor Saturation of Rotations ####
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Only save an external copy of the plot if specified to
+if (params$SavePlots == TRUE) {
+  
+  ## Initiate a .png file to save the subsequent ggplot2 image
+  png(file   = here("Analyses", "Figures", "Comparing_Oblique_Rotations_SL.png"),
+      width  = 6,
+      height = 8,
+      units  = "in",
+      res    = 300)
+
+} # END if (params$SavePlots == TRUE) 
+
+## Plot the obtained data
+RotIndeterPlot <- ggplot(data  = resultsDF,
+                         aes(x = Kappa,
+                             y = OmegaG)) +
+  ## Add scatterplot
+  geom_point() +
+  ## Label the axes
+  labs(title = "Comparing Oblique Rotations in the SL procedure",
+       x     = ~ paste(kappa, " Parameter Value"),
+       y     = ~ paste(omega[h], " General Factor Saturation")) +
+  ## Horizontal line demarcating the geomin-based threshold
+  geom_hline(aes(yintercept = geominSL$OmegaGeneral)) +
+  ## Alter the y axis (limits and tick marks)
+  scale_y_continuous(limits = c(.35, .60),
+                     expand = c(0, 0),
+                     breaks = seq(.35, .60, .05)) +
+  ## Alter the x axis (limits and tick marks)
+  scale_x_continuous(limits = c(0, 1),
+                     expand = c(.01, .01)) +
+  ## Add text to the figure
+  geom_text(aes(0,
+                geominSL$OmegaGeneral,
+                label = "geomin rotation",
+                vjust = -1,
+                hjust = -1.7)) +
+  ## Add a particular theme to the plot
+  papaja::theme_apa()
+
+## Add boxplot to the "y" axis to show density
+MarginalRotIndeterPlot <- 
+  ggMarginal(RotIndeterPlot,
+             type    = "boxplot", ## Add boxplot to exterior part of axes
+             margins = "y")        ## Only add boxplot to y-axis
+
+## Produce the plot
+MarginalRotIndeterPlot
+
+## Only save the plots if the markdown parameter specifies it
+if (params$SavePlots == TRUE) {
+  
+  ## Finalize the .png file of the above plot
+  dev.off()
+  
+} # END if (params$SavePlots == TRUE) 
+```
+
+## Bifactor Analysis
+
+A second-order Schmid-Leiman exploratory bifactor model was estimated.
+Factors were extracted via the ordinary least squares (OLS) factor
+extraction algorithm. The first-order factors were obliquely rotated by
+the geomin rotation criterion. To mitigate the role of local solutions
+in the geomin rotation, the first-order factors were rotated from 100
+different random starting configurations. From the 100 alternative
+solutions, the rotation with the smallest criterion value was retained
+as the global minimum. No local solutions were found in the previous
+section, therefore no standardization routines (i.e., Kaiser
+normalization or Cureton-Mulaik standardization) were applied.
+
+Appended to the bifactor loadings matrix are two additional columns,
+$h^2$ and I-ECV, displaying the communality and item explained common
+variance results (respectively). The remainder of the table contains the
+bifactor loadings obtained by an SL transformation of a second-order
+factor model.
+
+```{r Performance Bifactor Analysis}
+## ~~~~~~~~~~~~~~~~~~~~~ ##
+#### Bifactor Analyses ####
+## ~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Conduct tranditional Schmid-Leiman procedure, do not round output
+SLOutput <- 
+  SchmidLeiman(R          = HoffmanCorrMat, ## Corr matrix
+               numFactors = c(4, 1),        ## Number of factors per level
+               facMethod  = "fals",         ## Fac extraction method
+               rotate     = "geominQ",      ## Rotational criterion
+               rotateControl = 
+                 list(numberStarts = 100,   ## Random start configs
+                      delta        = .01,   ## Geomin tuning param
+                      standardize  = "none"))$B    
+
+## Add column names to the SL Bifactor output
+colnames(SLOutput) <- c("Performance", "Boss", "Peer", "Subordinate", "Self")
+
+## Sort the row order into 'hallow staircase' pattern
+SortedSL <- faSort(fmat     = SLOutput,
+                   BiFactor = TRUE)$loadings
+
+## Compute the item communalities
+Communality <- apply(SortedSL^2, 1, sum)
+
+## Compute the item explained common variance (I-ECV)
+IECV <- apply(SortedSL^2, 1, function(x) x[1] / sum(x))
+
+## Add columns for the communality and and I-ECV values
+SL <- cbind(SortedSL, 
+            Communality, 
+            IECV) %>% round(2)
+
+## Give clear row and column names
+dimnames(SL) <- 
+  list(rep(c("Technical", "Interpersonal", "Leadership"), 4), 
+       c("Performance", "Boss", "Peer", "Subordinate", "Self", 
+         "$h^2$", "I-ECV"))
+```
+
+```{r Table Performance Bifactor Model}
+
+## Create table caption
+TabCaption <- c("Schmid-Leiman Bifactor Solution of the
+                Multisource Performance Ratings")
+
+## Remove newlines and whitespaces
+TabCaption %<>% str_replace_all("[\n]", "") %>% str_squish()
+
+## Create table using knitr's kable function
+kable(SL,
+      # format    = "latex",
+      caption   = TabCaption,
+      booktabs  = TRUE,
+      longtable = FALSE,
+      escape    = FALSE,
+      linesep   = "") %>%
+  
+  ## Row header for the rating sources
+  pack_rows("Boss Ratings", 1, 3) %>% 
+  pack_rows("Peer Ratings", 4, 6) %>% 
+  pack_rows("Subordinate Ratings", 7, 9) %>% 
+  pack_rows("Self Ratings", 10, 12) %>% 
+  
+  ## Column header to identify column contents
+  add_header_above(c(" " = 2, "Group factors" = 4, "Item indices" = 2)) %>% 
+  
+  ## Add a footnote
+  footnote(general        = 
+            "$h^2$ = item communality; I-ECV = item explained common variance.",
+           threeparttable = TRUE,
+           escape         = FALSE)
+```
+
+## Model-Based Reliability Analyses ($\omega$)
+
+The table below produces the model-based reliability values (i.e.,
+$\omega$ and its cognates). There are three types of $\omega$ values
+reported in the table below. Overall $\omega$ representing the
+proportion of the overall, unit-weighted score variance that is
+accounted for by the latent factors. Next, omega hierarchical (i.e.,
+$\omega_h$) represents the proportion of the overall, unit-weighted sum
+score variance that is accounted for by a particular factor. Lastly,
+omega hierarhical subscale (i.e., $\omega_{hs}$) represents the
+proportion of the overall, unit-weighted sum score variance *for a
+subset of the items* that is accounted for by a particular factor. For
+instance, computing $\omega_{hs}$ for the self-report ratings only
+included the rows with salient loadings on the self-report group factor.
+Here, "salient loadings" are those factor loadings $\ge |.30|$ in
+magnitude.
+
+```{r Performance Omega}
+## ~~~~~~~~~~~~~~~~~~~~~~~ ##
+#### Omega Computations  ####
+## ~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Overall omega estimate (all common factors / common + uniqueness)
+HoffmanOmegaTotal <- Omega(SLOutput)$OmegaTotal %>% round(2)
+
+## Omega hierarchical (gen factor / common + uniqueness)
+HoffmanOmegaGeneral <- Omega(SLOutput)$OmegaGeneral %>% round(2)
+
+## Omega hierarchical Boss Subscale 
+BossSubscaleUniqueness <- 1 - (SLOutput[7:9, ]^2 %>% apply(1, sum))
+BossNumerator <- sum(SLOutput[7:9, "Boss"])^2
+BossDenominator <- 
+  cbind(SLOutput[7:9, c("Performance", "Boss")], BossSubscaleUniqueness) %>% 
+  apply(2, function(x) sum(x)^2) %>% 
+  sum
+BossSubscaleOmega <- (BossNumerator / BossDenominator) %>% round(2)
+
+## Omega hierarchical Peer Subscale 
+PeerSubscaleUniqueness <- 1 - (SLOutput[4:6, ]^2 %>% apply(1, sum))
+PeerNumerator <- sum(SLOutput[4:6, "Peer"])^2
+PeerDenominator <- 
+  cbind(SLOutput[4:6, c("Performance", "Peer")], PeerSubscaleUniqueness) %>% 
+  apply(2, function(x) sum(x)^2) %>% 
+  sum
+PeerSubscaleOmega <- (PeerNumerator / PeerDenominator) %>% round(2)
+
+
+## Omega hierarchical Subordinate Subscale 
+SubSubscaleUniqueness <- 1 - (SLOutput[1:3, ]^2 %>% apply(1, sum))
+SubNumerator <- sum(SLOutput[1:3, "Subordinate"])^2
+SubDenominator <- 
+  cbind(SLOutput[1:3, c("Performance", "Subordinate")], 
+        SubSubscaleUniqueness) %>% 
+  apply(2, function(x) sum(x)^2) %>% 
+  sum
+SubSubscaleOmega <- (SubNumerator / SubDenominator) %>% round(2)
+
+
+## Omega hierarchical Self Subscale
+SelfSubscaleUniqueness <- 1 - (SLOutput[10:12, ]^2 %>% apply(1, sum))
+SelfNumerator <- sum(SLOutput[10:12, "Self"])^2
+SelfDenominator <- 
+  cbind(SLOutput[10:12, c("Performance", "Self")], SelfSubscaleUniqueness) %>% 
+  apply(2, function(x) sum(x)^2) %>% 
+  sum ## Sum the above values across all factors
+SelfSubscaleOmega <- (SelfNumerator / SelfDenominator) %>% round(2)
+
+```
+
+```{r Performance Omega Table}
+## Create a table of the omega values
+data.frame("Overall"     = HoffmanOmegaTotal,
+           "Performance" = HoffmanOmegaGeneral,
+           "Boss"        = BossSubscaleOmega,
+           "Peer"        = PeerSubscaleOmega,
+           "Subordinate" = SubSubscaleOmega,
+           "Self"        = SelfSubscaleOmega) %>% 
+  
+  ## Transpose the data.frame to be a column vector
+  t() %>% 
+  
+  ## Create a table in LaTeX
+  kable(#format    = "latex",
+        caption   = "Reliability Indices for the Performance Bifactor Model",
+        col.names = c("$\\omega$"),
+        booktabs  = TRUE,
+        longtable = FALSE,
+        escape    = FALSE,
+        linesep   = '') %>% 
+  
+  ## Row headings
+  pack_rows("Omega full scale", 1, 1) %>% 
+  pack_rows("Omega hierarchical", 2, 2) %>% 
+  pack_rows("Omega hierarchical subscale", 3, 6) %>% 
+  
+  ## Create extra column width in the first column
+  column_spec(column = 1, 
+              width  = "2.5in") %>% 
+  
+  ## Create table footnote
+  footnote(general = 
+             "Row headers denote which type of omega values are estimated.",
+           threeparttable = TRUE)
+  
+```
+
+## Factor Determinacy
+
+The following section is purely for illustrative purposes as no factor
+scores were estimated (nor could they be because no raw data were
+available). Moreover, there are no external criteria with which to
+relate to the estimated factor scores. Nevertheless, factor
+indeterminacy metrics were calculated.
+
+The values reported below are the factor indeterminacy ($\rho$) values.
+These values represent the correlation between factor scores and the
+factors. Stated differently, these values represent the multiple
+correlation between the observed variables and the latent factor. The
+values range between zero and unity with larger values indicating that
+factor scores are better determined (and that the observed variables are
+related to the latent factor). Empirically, factor determinacy is a
+function of (a) factor loading strength and (b) the number of salient,
+non-trivial factor indicators for a given factor. General factors, by
+definition, have more salient loadings than the group factors but there
+is no guarantee that general factors are better determined (as is shown
+below). Moreover, recommendations suggest that factor determinacy values
+less than .90 are ill-suited for practical applications of factor score
+estimation (e.g., relating factors to external criteria).
+
+Notice that in the present developmental performance dataset, the
+general factor was the least-well determined factor.
+
+```{r Performance Factor Determinacy}
+## ~~~~~~~~~~~~~~~~~~~~~~~~ ##
+#### Factor Indeterminacy ####
+## ~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Create a footnote to include in the table below
+TabFootnote2 <- c("$\\\\rho$ = correlation between factor scores and factors, 
+$\\\\rho^2$ = squared correlation between factor scores and factors, 
+MPC = minimum possible correlation between sets of factor scores.")
+
+## Tidy the footnote caption
+TabFootnote2 %<>% str_replace_all("\n", "")
+
+## Quantify the degree of factor determinacy for the bifactor model
+## Correlations between factor scores and factors
+HoffmanFacIndeter <- 
+  factorIndeterminacy(Lambda   = SLOutput,
+                      PhiMat   = diag(ncol(SLOutput)), ## Identity matrix
+                      SampCorr = HoffmanCorrMat) %>% 
+  as.data.frame() ## Convert to column vector
+
+## Squared factor score determinacy value
+HoffmanRhoSqr <- HoffmanFacIndeter^2
+
+## Minimum possible correlation between sets of factor scores
+HoffmanMPC <- 2 * HoffmanRhoSqr - 1
+
+## Add row names corresponding to the tabled values
+rownames(HoffmanFacIndeter) <- colnames(SLOutput)
+
+## Create data.frame of the factor indeterminacy values
+data.frame(HoffmanFacIndeter, 
+           HoffmanRhoSqr, 
+           HoffmanMPC) %>% 
+  
+  ## Table the factor indeterminacy values
+  kable(caption   = 
+          "Factor Indeterminacy Values for the Performance Bifactor Model",
+        col.names = c("$\\rho$", "$\\rho^2$", "MPC"),
+        booktabs  = TRUE,  
+        longtable = FALSE,  
+        escape    = FALSE,
+        digits    = 2,
+        linesep   = "") %>% 
+  
+  ## Create footnotes to go with the table
+  footnote(general        = TabFootnote2,
+           threeparttable = TRUE,
+           escape         = FALSE)
+```
+
+# Conscientiousness Personality Data
+
+## Data Wrangling
+
+The conscientiousness dataset included 11 subdimensions (i.e., facet
+scales) of conscientiousness. All ratings were provided by 761 college
+students from a large Midwestern university.
+
+Scale-level statistics (e.g., responses, mean, sd, etc) and the full
+intercorrelation matrix of the conscientiousness scale scores are
+provided in the tables below.
+
+```{r Conscientiousness Data Wrangling}
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+#### Load Conscientiousness Data ####
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Load the data
+rawData <- read_xlsx(here("Data Files", 
+                          "Cleaned Conscientiousness Raw Data.xlsx"))
+
+## View the data and its structure (uncomment to see)
+# View(rawData)
+
+## Names of conscientiousness scale scores
+## Ignore "Participants" identifier column
+ConScales <- rawData[, -1] %>% colnames
+```
+
+```{r Conscientiousness item statistics}
+## ~~~~~~~~~~~~~~~~~~~ ##
+#### Item Statistics ####
+## ~~~~~~~~~~~~~~~~~~~ ##
+
+## Create table footnote 
+TabFootnote4 <- c("n = number of responses to the scale, sd = standard
+                  deviation, trimmed = mean of the trimmed data, mad = median 
+                  absolute deviation (i.e., deviation, in absolute value, from 
+                  the median), min = minimum, max = maximum, se = 
+                  standard error.") %>% 
+  str_replace_all("\n", "") %>% 
+  str_squish()
+
+## Identify scale-level descriptive statistics
+itemStats <- rawData %>%               
+  select(-Participant) %>%   ## Only select scale scores
+  describe() %>%          ## Compute item statistics
+  select(-vars)
+
+  
+## Table the results
+kable(itemStats,
+      booktabs  = TRUE,
+      caption   = "Conscientiousness Scale Descriptive Statistics",
+      linesep   = "",
+      digits    = 2,
+      longtable = FALSE) %>% 
+  
+  ## Create a footnote to describe the column values
+  footnote(general        = TabFootnote4,
+           threeparttable = TRUE)
+
+## Create matrix of standardized scale scores (used for factor score estimates)
+scaleData <- rawData %>%  ## From the Raw Data
+  select(-Participant) %>%   ## Extract conscientiousness scale scores
+  scale(center = TRUE,    ## Mean center the data
+        scale  = TRUE)    ## Unit variance
+
+## Generate an item intercorrelation matrix
+corData <- cor(scaleData, 
+               use    = "pairwise.complete.obs", ## Pairwise deletion
+               method = "pearson")               ## Pearson correlation
+
+## Add numbers to the front to correspond with numbered column headers
+rownames(corData) <- paste0(rownames(corData), " (", seq_len(ncol(corData)), ")")
+```
+
+```{r Conscientiousness correlation matrix}
+## Create a correlation matrix table
+kable(corData,
+      booktabs  = TRUE,
+      caption   = "Conscientiousness Scale Intercorrelation Matrix",
+      linesep   = "",
+      col.names = paste0("(", seq_len(ncol(corData)), ")"),
+      digits    = 2,
+      longtable = TRUE) %>% 
+  
+  ## Change table placement and make it full width
+  kable_styling(latex_options = c("striped", "hold_position")) %>%
+  
+  ## Orient the page in landscape view to better display the table
+  landscape()
+```
+
+## Dimensionality Detection
+
+Mirroring the modeling strategy for the developmental performance data,
+we used a combination of theoretical and empirical strategies to
+identify the plausible range of factors.
+
+### Scree Plot
+
+Unlike in the performance data above, we did not have as strong of an *a
+priori* estimate of the true number of factors. Therefore, we estimated
+communalities using the traditional squared multiple correlation (SMC)
+approach. SMC values are the squared multiple correlation for predicting
+one variable from all other variables. Such values are placed on the
+diagonal of the correlation matrix as a proxy for the estimated
+communality values. Eigenvalues are obtained from this reduced
+correlation matrix (i.e., a correlation matrix with communality values
+on its diagonal) to create the scree plot.
+
+The depicted scree plot shows two noteworthy drop-offs in eigenvalues.
+The first drop-off indicates a strong general factor whereas the
+remaining second or third eigenvalues represent the (plausible) range
+for the number of group factors present in the dataset. Thus, the scree
+plot recommended the extraction of either two or three group factors in
+a constrained hierarchical bifactor model.
+
+```{r Conscientiousness Scree Plot}
+## ~~~~~~~~~~~~~~ ##
+#### Scree Plot ####
+## ~~~~~~~~~~~~~~ ##
+
+## Estimate communalities via SMC
+Communalities <- 1 - 1 / diag(solve(corData))
+
+## Insert communalities as the diagonal elements
+reducedConscCorMatrix <- corData - diag(1 - Communalities)
+
+## Plot the eigenvalues in a Scree Plot
+eigen(reducedConscCorMatrix)$val %>% 
+  plot(type = "b", ## Line connecting points on plot
+       main = "Scree Plot: Conscientiousness Data",
+       xlab = "Factor number",
+       ylab = "Eigenvalue for each factor",
+       ylim = c(-.20, 5.0))
+```
+
+### Parallel Analysis
+
+Again, we did not rely on parallel analyses to determine the optimal
+number of factors to extract. However, parallel analyses are commonly
+applied so we included the code to conduct such analyses. As can be
+seen, several of the proposed factors are associated with eigenvalues
+that are trivially larger than those of randomly-generated eigenvalues.
+Thus, the recommendation to extract six factors is likely too high.
+Overextraction is a common problem in parallel analysis when sample
+sizes are notably larger than the norm. Indeed, six factors is the
+maximum number of factors that can be uniquely identified in a
+first-order solution with 11 factor indicators (cf. Ledermann, 1937, see
+also the Lederman function in the fungible library).
+
+```{r Conscientiousness Parallel Analysis}
+## ~~~~~~~~~~~~~~~~~~~~~ ##
+#### Parallel Analysis ####
+## ~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Maximum number of factors that can be extracted
+# Ledermann(numVariables = ncol(scaleData))$numFactors
+
+## Parallel analysis
+fa.parallel(x           = scaleData, ## Raw data
+            fa          = "fa",      ## Fact analysis only, not PCA
+            fm          = "uls",     ## OLS estimation
+            SMC         = TRUE,      ## Communality est by sqr multi correlation
+            n.iter      = 100,       ## Number of iterations to attempt
+            show.legend = FALSE)     ## Hide legend
+
+```
+
+### Empirical Kaiser Criterion
+
+Recall from the manuscript that the empirical Kaiser criterion (EKC)
+procedure accounts for the sampling behavior of eigenvalues and the
+serial nature of eigenvalues. The results of the EKC procedure
+recommended extracting about three factors with the third factor having
+a marginally larger eigenvalue than what is expected due to chance.
+Thus, either two or three factors represent a plausible range of common
+factors to model.
+
+```{r Conscientiousness EKC}
+## ~~~~~~~~~~~~ ##
+#### EKC Plot ####
+## ~~~~~~~~~~~~ ##
+
+ConscEKC <- faEKC(R     = corData,
+                  NSubj = nrow(scaleData),
+                  Plot  = TRUE)
+```
+
+## Bifactor Analysis
+
+A (constrained) hierarchical exploratory bifactor model was fitted to
+the data using the Direct Schmid-Leiman (DSL) procedure. Note that the
+Schmid-Leiman procedure cannot uniquely estimate loadings on a
+second-order general factor from only two (correlated) first-order
+factors. Most factor analysis programs therefore take the square root of
+the factor correlation to obtain the second-order factor loadings. This
+will necessarily bias loadings in an SL transformation. Therefore, a DSL
+procedure was applied as it does not fall prey to the same deficiency.
+
+An exploratory version of the DSL procedure (cf. Giordano & Waller,
+2020; Waller, 2018) was applied to create the target matrix for the
+Procrustian rotation. Specifically, a first-order correlated-factor
+pattern was obtained by extracting two factors and applying a geomin
+rotation. Next, salient/non-salient loadings were identified in the
+factor pattern by applying a threshold of .20 (i.e.,
+$\lambda \ge |.20|$). Salient loadings were replaced with $\pm1$
+(retaining their original sign) whereas non-salient loadings were set to
+zero. No standardization procedures were applied to the geomin rotation
+(e.g., Kaiser normalization). All factors were extracted via an ordinary
+least squares (OLS) discrepancy function.
+
+### Two Group Factor Solution
+
+By arbitrarily defining factor loadings $< |.30|$ as being trivially
+influenced by a latent factor, we can determine which items are related
+to which factors. The first group factor was comprised of (in descending
+order of factor-loading strength) diligence, achievement, persistence,
+industriousness, virtue, deliberateness, and cautiousness. The second
+group factor was comprised of (in descending order of factor-loading
+strength) Dutifulness, traditionalism, and responsibility. Orderliness
+did not fit cleanly in either group factor (though, again, the cutoff
+was arbitrary).
+
+```{r Conscientiousness 2 factor Bifactor Model}
+## ~~~~~~~~~~~~~~~~~~~~~ ##
+#### Bifactor Analyses ####
+## ~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Get rid of numbers in rownames so matrix is symmetric
+rownames(corData) <- colnames(corData)
+
+## Conduct Direct Schmid-Leiman orthogonalization of a 2nd order model
+ConscDSLOutput <- 
+  BiFAD(R             = corData,      ## Scale-level corr matrix
+        B             = NULL,         ## No user-specified target matrix
+        numFactors    = 2,            ## Number of GROUP factors extracted
+        facMethod     = "fals",       ## Least squares extraction
+        rotate        = "geominQ",    ## Geomin rotation
+        salient       = .20,          ## Threshold to create target matrix
+        rotateControl = 
+          list(numberStarts = 100,    ## Number of random start values
+               delta        = .01))   ## Geomin tuning parameter
+
+## Add scale names for interpretability
+## NOTE: Item order was NOT sorted above and Procrustes does not alter row order
+rownames(ConscDSLOutput$BstarSL) <- rownames(corData)
+colnames(ConscDSLOutput$BstarSL) <- c("Conscientiousness", 
+                                      "Prudent work orientation",
+                                      "Conformity")
+
+## Create an object of the rank-deficient DSL loadings matrix
+Consc2FactorDSL <- ConscDSLOutput$BstarSL
+
+## ~~~~~~~~~~~~~~~~~~~~ ##
+#### Sort Item Order  ####
+## ~~~~~~~~~~~~~~~~~~~~ ##
+
+## Find group factor simple structure (factor loadings in descending order)
+## What Holzinger called the 'hallow staircase' pattern
+itemOrder <- faSort(fmat     = Consc2FactorDSL,
+                    BiFactor = TRUE)$sortOrder ## Ignore 1st factor in sorting
+
+## Order the items in the obtained DSL solution 
+Consc2FactorDSL <- Consc2FactorDSL[itemOrder, ]
+
+## Ensure the data correlation matrix has the same order (used later)
+corData <- corData[itemOrder, itemOrder]
+
+## Ensure the (standardized) data are in the new order as well
+scaleData <- scaleData[, itemOrder]
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+#### Factor Indicator Statistics  ####
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Compute the item communalities
+Communality <- apply(Consc2FactorDSL^2, 1, sum)
+
+## Compute item explained common variance (I-ECV)
+IECV <- apply(Consc2FactorDSL^2, 1, function(x) x[1] / sum(x))
+
+## Combine factor loadings matrix with the item variance metrics
+DSLrounded <- cbind(Consc2FactorDSL, Communality, IECV) %>% round(2)
+
+## Add column names for the factors and statistical indices
+colnames(DSLrounded) <- c(colnames(Consc2FactorDSL),
+                          "$h^2$", 
+                          "I-ECV")
+```
+
+```{r Conscientiousness 2 Factor Bifactor Table}
+
+## Create table caption, remove linebreaks
+TabCaption6 <- c("Direct Schmid-Leiman Two Factor Bifactor Solution of the 
+                 Conscientiousness Scales") %>% 
+  str_replace("\n", "") %>% 
+  str_squish
+
+## Remove extra linebreaks and whitespaces
+TabFootnote5 <- c("$h^2$ = item communality; I-ECV = item explained common 
+                  variance.") %>% str_replace("\n", "") %>% str_squish()
+
+## Create table using knitr's kable function
+kable(DSLrounded,
+      caption   = TabCaption6,
+      booktabs  = TRUE,
+      longtable = FALSE,
+      escape    = FALSE,
+      linesep   = "") %>%
+  
+  ## Column header to identify column contents
+  add_header_above(c(" " = 2, "Group factors" = 2, "Item indices" = 2)) %>% 
+  
+  ## Add a footnote
+  footnote(general        = TabFootnote5,
+           threeparttable = TRUE,
+           escape         = FALSE)
+```
+
+### Three Group Factor Solution
+
+The three-group-factor bifactor solution was estimated by the
+traditional Schmid-Leiman procedure. Second-order general factor
+loadings can be uniquely estimated from three first-order factors.
+Moreover, Schmid-Leiman tends to produce more accurate parameter
+estimates (compared to DSL) as the sample size increases.
+
+The obtained bifactor solution with three group factors is provided
+below. The composition of the three group factors, using the same
+arbitrary cutoff of .30, is as follows. The first group factor was
+comprised of achievement, diligence, persistence, and industriousness.
+This group factor is readily interpretable as Industriousness or Work
+Orientation. The second group factor was comprised of dutifulness and
+traditionalism. This second factor represents the Conformity factor from
+the two-group-factor model. The third group factor was comprised of
+deliberateness and cautiousness. This last factor can be considered to
+measure Prudence. Virtue, responsibility, and orderliness did not fit
+cleanly under any of these group factors (though they had modestly
+strong general factor correlations; $.44 \le \lambda_g \le .62$).
+
+```{r Conscientiousness Three Factor Bifactor}
+## ~~~~~~~~~~~~~~~~~~~~~ ##
+#### Bifactor Analyses ####
+## ~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Conduct Direct Schmid-Leiman orthogonalization of a 2nd order model
+Consc3FactorSL <- 
+  SchmidLeiman(R             = corData,        ## Scale-level corr matrix
+               numFactors    = c(3, 1),        ## Number of factors per level
+               facMethod     = "fals",         ## Least squares extraction
+               rotate        = "geominQ",      ## Geomin rotation
+               rotateControl =   
+                 list(numberStarts = 100,      ## Number of random start values
+                      delta        = .01))$B   ## Geomin tuning parameter
+
+## Add scale names for interpretability
+## NOTE: Item order was NOT sorted above and Procrustes does not alter row order
+rownames(Consc3FactorSL) <- rownames(corData)
+colnames(Consc3FactorSL) <- c("Conscientiousness", 
+                              "Work orientation",
+                              "Conformity",
+                              "Prudence")
+
+## ~~~~~~~~~~~~~~~~~~~~ ##
+#### Sort Item Order  ####
+## ~~~~~~~~~~~~~~~~~~~~ ##
+
+## Find group factor simple structure (factor loadings in descending order)
+threeFacItemOrder <- faSort(fmat     = Consc3FactorSL,
+                            BiFactor = TRUE)$sortOrder
+
+## Order the items in the obtained DSL solution 
+Consc3FactorSL <- Consc3FactorSL[threeFacItemOrder, ]
+
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+#### Factor Indicator Statistics  ####
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Compute the item communalities
+Communality <- apply(Consc3FactorSL^2, 1, sum)
+
+## Compute item explained common variance (I-ECV)
+IECV <- apply(Consc3FactorSL^2, 1, function(x) x[1] / sum(x))
+
+## Combine factor loadings matrix with the item variance metrics
+SLrounded <- cbind(Consc3FactorSL, Communality, IECV) %>% round(2)
+
+## Add column names for the factors and statistical indices
+colnames(SLrounded) <- c(colnames(Consc3FactorSL),
+                         "$h^2$", 
+                         "I-ECV")
+```
+
+```{r Conscientiousness Three Factor Bifactor Table}
+## Create table caption, remove linebreaks
+TabCaption7 <- c("Schmid-Leiman Three Factor Bifactor Solution of the 
+                 Conscientiousness Scales") %>% 
+  str_replace("\n", "") %>% str_squish()
+
+## Create table using knitr's kable function
+kable(SLrounded,
+      caption   = TabCaption7,
+      booktabs  = TRUE,
+      longtable = FALSE,
+      escape    = FALSE,
+      linesep   = "") %>%
+  
+  ## Column header to identify column contents
+  add_header_above(c(" " = 2, "Group factors" = 3, "Item indices" = 2)) %>% 
+  
+  ## Add a footnote
+  footnote(general        = TabFootnote5,
+           threeparttable = TRUE,
+           escape         = FALSE)
+```
+
+## Model-Based Reliability Analyses ($\omega$)
+
+The table below provides the model-based reliability values (i.e.,
+$\omega$ and its cognates) for the two-group-factor bifactor model.
+
+```{r Conscientiousness Omega Computations}
+## ~~~~~~~~~~~~~~~~~~~~~~ ##
+#### Omega Computations ####
+## ~~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Overall omega estimate (all common factors / common + uniqueness)
+ConscOmegaTotal <- Omega(Consc2FactorDSL)$OmegaTotal %>% round(2)
+
+## Omega hierarchical (gen factor / common + uniqueness)
+ConscOmegaGeneral <- Omega(Consc2FactorDSL)$OmegaGeneral %>% round(2)
+
+## Omega hierarchical subscale: Group Factor 1
+GF1 <- c("Diligence", "Achievement", "Persistence", "Industriousness", 
+         "Virtue", "Deliberateness", "Cautiousness")
+
+## Compute the uniqueness values (i.e., 1 - communalities)
+GF1Uniqueness <- 1 - (Consc2FactorDSL[GF1, ]^2 %>% 
+                        apply(1, sum)) ## 1 minus communalities
+## Compute numerator for Omega subscale
+GF1Numerator <- sum(Consc2FactorDSL[GF1, "Prudent work orientation"])^2 
+
+## Compute denominator for Omega subscale
+GF1Denominator <- cbind(Consc2FactorDSL[GF1, c("Conscientiousness", 
+                                               "Prudent work orientation")], 
+                        GF1Uniqueness) %>% 
+  apply(2, function(x) sum(x)^2) %>% sum
+
+## Omega subscale values
+GF1SubscaleOmega <- (GF1Numerator / GF1Denominator) %>% round(2)
+
+## Omega hierarchical subscale: Group factor 2
+GF2 <- c("Dutifulness", "Traditionalism", "Responsibility")
+
+## Compute the uniqueness values (i.e., 1 - communalities)
+GF2Uniqueness <- 1 - (Consc2FactorDSL[GF2, ]^2 %>% 
+                        apply(1, sum)) ## 1 minus communalities
+GF2Numerator <- sum(Consc2FactorDSL[GF2, "Conformity"])^2 
+GF2Denominator <- cbind(Consc2FactorDSL[GF2, c("Conscientiousness", 
+                                               "Conformity")], 
+                        GF2Uniqueness) %>% 
+  apply(2, function(x) sum(x)^2) %>% sum
+GF2SubscaleOmega <- (GF2Numerator / GF2Denominator) %>% round(2)
+
+```
+
+```{r Conscientiousness Omega Table}
+## Create table caption
+TabCaption8 <- c("Model Based Reliability Indices for the Conscientiousness 
+                 Bifactor Model") %>% str_replace("\n", "") %>% str_squish()
+
+
+## Create a table of the omega values
+data.frame("Overall"                  = ConscOmegaTotal,
+           "Conscientiousness"        = ConscOmegaGeneral,
+           "Prudent work orientation" = GF1SubscaleOmega,
+           "Conformity"               = GF2SubscaleOmega) %>% 
+  
+  ## Transpose the data.frame to be a column vector
+  t() %>% 
+  
+  ## Create a table in LaTeX
+  kable(caption   = TabCaption8,
+        booktabs  = TRUE,
+        longtable = FALSE,
+        escape    = FALSE,
+        linesep   = "") %>% 
+  
+  ## Row headings
+  pack_rows("Omega full scale", 1, 1) %>% 
+  pack_rows("Omega hierarchical", 2, 2) %>% 
+  pack_rows("Omega hierarchical subscale", 3, 4) %>% 
+  
+  ## Create extra column width in the first column
+  column_spec(column = 1, 
+              width  = "2.5in") 
+```
+
+## Factor Determinacy
+
+The values reported below are the factor indeterminacy values. These
+values represent the correlation between factor scores and the factors.
+The values range between zero and unity with larger values indicating
+that factor scores are better determined. Empirically, factor
+determinacy is a function of (a) factor loading strength and (b) the
+number of salient factor indicators for a given factor. General factors,
+by definition, have more salient loadings than the group factors but
+there is no guarantee that general factors are better determined (as
+shown below). Moreover, recommendations suggest that factor determinacy
+values less than .90 are ill-suited for practical applications.
+
+Nevertheless, we computed factor scores for illustrative purposes.
+
+```{r Conscientiousness factor determinacy}
+## ~~~~~~~~~~~~~~~~~~~~~~~~ ##
+#### Factor Indeterminacy ####
+## ~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Verify the model and correlation matrix are similarly ordered
+if (all.equal(rownames(Consc2FactorDSL), rownames(corData)) != TRUE) {
+  stop("Variables are not in the same order")
+} # END if (all.equal(rownames(Consc2FactorDSL), rownames(corData)) != TRUE) 
+
+## Compute Guttman's (1995) factor indeterminacy index
+ConscFacIndeter <- 
+  factorIndeterminacy(Lambda   = Consc2FactorDSL,
+                      PhiMat   = diag(ncol(Consc2FactorDSL)),
+                      SampCorr = corData) %>% 
+  as.data.frame()
+
+## Factor score indeterminacy metric (rho)
+rho <- ConscFacIndeter
+
+## Add rownames to the data frame for later tabling
+rownames(ConscFacIndeter) <- colnames(Consc2FactorDSL)
+
+## Rho squared: Shared variance between factor scores and factors
+rhoSqr <- ConscFacIndeter^2
+
+## Minimum possible correlation between sets of factor scores 
+minCorr <- 2 * rhoSqr - 1
+
+## Create table caption
+TabCaption9 <- c("Factor Determinacy Indicies for the Conscientiousness 
+                 Bifactor Model") %>% str_replace("\n", "") %>% str_squish()
+
+## Create table footnote
+TabFootnote6 <- c("$\\\\rho$ = correlation between factor scores and factors, 
+                  $\\\\rho^2$ = squared correlation between factor scores and 
+                  factors, MPC = minimum possible correlation between sets of 
+                  factor scores.") %>% str_replace_all("\n", "") %>% str_squish
+
+data.frame(rho,
+           rhoSqr,
+           minCorr) %>% 
+  kable(caption   = TabCaption9,
+        booktabs  = TRUE,
+        longtable = FALSE,
+        escape    = FALSE,
+        col.names = c("$\\rho$", "$\\rho^2$", "MPC"),
+        digits    = 3,
+        linesep   = "") %>% 
+  kable_styling() %>% 
+  footnote(general = TabFootnote6,
+           threeparttable = TRUE,
+           escape         = FALSE)
+
+```
+
+## Factor Score Estimation
+
+The following section produces code illustrating how factor scores were
+estimated. Namely, two methods were applied: (a) approximated factor
+scores by summing unit-weighted scores and (b) factor scores estimated
+via Thurstone's regression-based approach. Unit-weighted scores are
+inexact and, in simulation work, typically yield the least accurate
+estimates of the true factor scores in moderate to larger sample sizes.
+Regression-based factor scores frequently yield correlated factor scores
+but tend to more accurately recover the true factor scores.
+
+To compute the unit-weighted sum score, the same arbitrary cutoff value
+from earlier (i.e., $\lambda \ge |.30|$) was applied. The user-written
+function includes an argument to change this threshold, which may (and
+likely will) alter factor score estimates (and their interpretation).
+For instance, setting the cutoff value to .28 will include orderliness
+as a contributor to the first group factor. At .30, orderliness is not
+included as a marker of either group factor.
+
+```{r Conscientiousness factor score estimates}
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+#### Factor Score Estimation ####
+## ~~~~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Unit-Weighted Sum Score
+UnitWeightSumFS <-
+  UnitWeightFacScore(stndData      = scaleData,
+                     Lambda        = Consc2FactorDSL,
+                     FacLoadCutoff = .30)
+
+## Extract the correlation between the factor scores
+CorrUnitWeight <- UnitWeightSumFS$r.scores
+
+## Thurstone "exact regression" (Grice, 2001) factor score estimates
+ThurstoneFS <-
+  faScores(X        = scaleData,
+           Loadings = Consc2FactorDSL,
+           Method   = "Thurstone")$fscores 
+
+## Create the factor score correlation matrix
+CorrThurstone <- cor(ThurstoneFS)
+
+## Find the correlation between factor scores across the 2 methods
+CorrFSAgreement <- rep(NA, 3)
+for (iFS in seq_len(length(CorrFSAgreement))) {
+  CorrFSAgreement[iFS] <- cor(UnitWeightSumFS$scores[, iFS],
+                              ThurstoneFS[, iFS])
+} # END for (iFS in seq_len(length(CorrFSAgreement))) 
+
+## Compile these correlations into one matrix
+FScorr <- matrix(NA, nrow = ncol(Consc2FactorDSL), ncol = ncol(Consc2FactorDSL))
+
+## Lower triangle is unit weighting FS intercorrelations
+FScorr[lower.tri(FScorr)] <- CorrUnitWeight[lower.tri(CorrUnitWeight)]
+
+## Upper triangle is thurstone FS intercorrelations
+FScorr[upper.tri(FScorr)] <- CorrThurstone[upper.tri(CorrThurstone)]
+
+## Diagonal is FS correlation across methods
+diag(FScorr) <- CorrFSAgreement
+
+## Convert the correlation matrix into a data frame for tabling purposes
+FScorr %<>% as.data.frame
+colnames(FScorr) <- rownames(FScorr) <- colnames(Consc2FactorDSL)
+
+```
+
+```{r Table the factor correlation values}
+
+## Set a caption for the upcoming table
+TabCaption10 <- c("Values in the lower triangle represent the correlations 
+                  between unit-weighted estimates of the factor scores. Values 
+                  in the upper triangle represent the correlations between 
+                  Thurstone's regression-based factor score estimates. Values 
+                  in the diagonal represent the correlation of scores on the 
+                  same factor by different estimation methods.") %>% 
+  str_replace_all("\n", "") %>% str_squish
+
+## Print the table of results
+kable(FScorr,
+      caption   = "Intercorrelation between factor score estimates",
+      booktabs  = TRUE,
+      longtable = FALSE,
+      digits    = 3,
+      linesep   = "") %>% 
+  kable_styling() %>% 
+  footnote(general        = TabCaption10,
+           threeparttable = TRUE)
+
+```
+
+## Factor Determinacy in the Three Group Factor Model
+
+In this section, we report the same factor score metrics as above for
+the conscientiousness bifactor model with two group factors.
+
+### Factor Determinacy
+
+Factor determinacy values are reported below for the conscientiousness
+bifactor model with three group factors (i.e., work orientation,
+conformity, and prudence). Here, the general conscientiousness factor is
+more determinate than two of the group factors: work orientation and
+prudence. These factors (as detailed above) represent a splitting of the
+prudent work orientation factor found in the bifactor model with two
+group factors. Thus, it is not a surprise that conformity has the
+highest determinacy values and the other two factors witnessed a
+noteable drop in factor determinacy values.
+
+```{r Three Group Fac Factor Indetermincy Metric}
+## ~~~~~~~~~~~~~~~~~~~~~~~~ ##
+#### Factor Indeterminacy ####
+## ~~~~~~~~~~~~~~~~~~~~~~~~ ##
+
+## Ensure correlation matrix is conformable with the factor pattern matrix
+corData3FacOrder <- corData[rownames(Consc3FactorSL),
+                            rownames(Consc3FactorSL)]
+
+## Return an error if variables are mis-aligned in the two matrices
+if (all.equal(rownames(corData3FacOrder), rownames(Consc3FactorSL)) != TRUE) {
+  stop("Variables are not in the same order.")
+} # END if (all.equal(rownames(corData3FacOrder), rownames(Consc3FactorSL)) != TRUE) 
+
+## Compute Guttman's (1995) factor indeterminacy index
+Consc3FacIndeter <- 
+  factorIndeterminacy(Lambda   = Consc3FactorSL,
+                      PhiMat   = diag(ncol(Consc3FactorSL)),
+                      SampCorr = corData3FacOrder) %>% 
+  as.data.frame()
+
+## Factor score indeterminacy metric (rho)
+rho <- Consc3FacIndeter
+
+## Add row names for later tabling
+rownames(Consc3FacIndeter) <- colnames(Consc3FactorSL)
+
+## Rho squared: Shared variance between factor scores and factors
+rhoSqr <- Consc3FacIndeter^2
+
+## Minimum possible correlation between sets of factor scores 
+minCorr <- 2 * rhoSqr - 1
+
+## Set table caption
+TabCaption10 <- c("Factor Determinacy Indicies for the Three Group Factor 
+                  Conscientiousness Bifactor Model") %>% 
+  str_replace("\n", "") %>% str_squish()
+
+data.frame(rho,
+           rhoSqr,
+           minCorr) %>% 
+  kable(caption   = TabCaption10,
+        booktabs  = TRUE,
+        longtable = FALSE,
+        escape    = FALSE,
+        col.names = c("$\\rho$", "$\\rho^2$", "MPC"),
+        digits    = 3,
+        linesep   = "") %>% 
+  kable_styling() %>% 
+  footnote(general = TabFootnote6,
+           threeparttable = TRUE,
+           escape         = FALSE)
+
+```

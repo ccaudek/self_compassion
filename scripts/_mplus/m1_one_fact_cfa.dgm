@@ -1,0 +1,128 @@
+VERSION 1.1.0
+INPUT
+TITLE:
+ 1 factor CFA.
+
+DATA:
+  FILE IS selfcompassionitems.dat;
+VARIABLE:
+  NAMES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22
+            scsk23 scoi24 scis25 scsk26;
+  MISSING ARE ALL(-9);
+  USEVARIABLES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22
+            scsk23 scoi24 scis25 scsk26;
+  CATEGORICAL ARE all;
+ANALYSIS:
+  ESTIMATOR = WLSMV;
+OUTPUT:
+ stdyx;
+MODEL:
+  sc BY scsj1* scoi2 scch3 scis4 scsk5* scoi6 scch7 scsj8
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22
+            scsk23 scoi24 scis25 scsk26;
+  sc@1;
+INPUT_END
+2
+2
+0
+2
+WLSMV
+1
+GENERAL
+0
+26
+1
+0
+scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 scsk23 scoi24 scis25 scsk26 sc
+1
+-1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0
+0
+1
+sc
+scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 scsk23 scoi24 scis25 scsk26
+1 1 sc scsj1 0.460 0.025
+1 1 sc scoi2 0.799 0.015
+1 1 sc scch3 -0.081 0.031
+1 1 sc scis4 0.815 0.013
+1 1 sc scsk5 -0.389 0.027
+1 1 sc scoi6 0.789 0.014
+1 1 sc scch7 -0.009 0.031
+1 1 sc scsj8 0.705 0.017
+1 1 sc scmi9 -0.276 0.029
+1 1 sc scch10 -0.142 0.029
+1 1 sc scsj11 0.666 0.019
+1 1 sc scsk12 -0.590 0.020
+1 1 sc scis13 0.761 0.015
+1 1 sc scmi14 -0.508 0.024
+1 1 sc scch15 -0.451 0.025
+1 1 sc scsj16 0.690 0.018
+1 1 sc scmi17 -0.597 0.021
+1 1 sc scis18 0.771 0.015
+1 1 sc scsk19 -0.625 0.020
+1 1 sc scoi20 0.592 0.022
+1 1 sc scsj21 0.527 0.023
+1 1 sc scmi22 -0.497 0.024
+1 1 sc scsk23 -0.614 0.022
+1 1 sc scoi24 0.639 0.022
+1 1 sc scis25 0.763 0.016
+1 1 sc scsk26 -0.545 0.024
+5 1 sc 1.000 0.000
+11 1 sc scsj1 0.460 0.025
+11 1 sc scoi2 0.799 0.015
+11 1 sc scch3 -0.081 0.031
+11 1 sc scis4 0.815 0.013
+11 1 sc scsk5 -0.389 0.027
+11 1 sc scoi6 0.789 0.014
+11 1 sc scch7 -0.009 0.031
+11 1 sc scsj8 0.705 0.017
+11 1 sc scmi9 -0.276 0.029
+11 1 sc scch10 -0.142 0.029
+11 1 sc scsj11 0.666 0.019
+11 1 sc scsk12 -0.590 0.020
+11 1 sc scis13 0.761 0.015
+11 1 sc scmi14 -0.508 0.024
+11 1 sc scch15 -0.451 0.025
+11 1 sc scsj16 0.690 0.018
+11 1 sc scmi17 -0.597 0.021
+11 1 sc scis18 0.771 0.015
+11 1 sc scsk19 -0.625 0.020
+11 1 sc scoi20 0.592 0.022
+11 1 sc scsj21 0.527 0.023
+11 1 sc scmi22 -0.497 0.024
+11 1 sc scsk23 -0.614 0.022
+11 1 sc scoi24 0.639 0.022
+11 1 sc scis25 0.763 0.016
+11 1 sc scsk26 -0.545 0.024
+15 1 sc 1.000 0.000
+31 1 sc scsj1 0.460 0.025
+31 1 sc scoi2 0.799 0.015
+31 1 sc scch3 -0.081 0.031
+31 1 sc scis4 0.815 0.013
+31 1 sc scsk5 -0.389 0.027
+31 1 sc scoi6 0.789 0.014
+31 1 sc scch7 -0.009 0.031
+31 1 sc scsj8 0.705 0.017
+31 1 sc scmi9 -0.276 0.029
+31 1 sc scch10 -0.142 0.029
+31 1 sc scsj11 0.666 0.019
+31 1 sc scsk12 -0.590 0.020
+31 1 sc scis13 0.761 0.015
+31 1 sc scmi14 -0.508 0.024
+31 1 sc scch15 -0.451 0.025
+31 1 sc scsj16 0.690 0.018
+31 1 sc scmi17 -0.597 0.021
+31 1 sc scis18 0.771 0.015
+31 1 sc scsk19 -0.625 0.020
+31 1 sc scoi20 0.592 0.022
+31 1 sc scsj21 0.527 0.023
+31 1 sc scmi22 -0.497 0.024
+31 1 sc scsk23 -0.614 0.022
+31 1 sc scoi24 0.639 0.022
+31 1 sc scis25 0.763 0.016
+31 1 sc scsk26 -0.545 0.024
+35 1 sc 1.000 0.000

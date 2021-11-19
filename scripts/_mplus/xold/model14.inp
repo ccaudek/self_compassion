@@ -1,0 +1,23 @@
+TITLE: Bi-factor ESEM.
+DATA:
+  FILE = scs.dat;
+VARIABLE:
+  NAMES = u1-u26 gender where;
+  MISSING = ALL(-9);
+  USEVARIABLES = u1-u26;
+  CATEGORICAL = u1-u26;
+cluster is where; 
+ANALYSIS: 
+  ROTATION = TARGET; 
+  type = complex;
+  PROCESSORS = 4;
+MODEL:
+  FG BY u1-u26;
+  SJ BY u1 u8  u11 u16  u21; !Self-Judgment;
+  IS BY u4 u13 u18 u25;      !Isolation Items;
+  OI BY u2 u6  u20 u24;      !Over-identified;
+  SK BY u5 u12 u19 u23  u26; !Self-Kindness;
+  CU BY u3 u7  u10 u15;      !Common Humanity;
+  MI BY u9 u14 u17 u22;      !Mindfulness;
+  FG WITH SJ-MI@0;
+OUTPUT: STDYX CINTERVAL;

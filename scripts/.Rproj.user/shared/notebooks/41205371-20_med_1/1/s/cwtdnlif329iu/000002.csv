@@ -1,0 +1,4 @@
+"0","```r
+neg_self_compassion <- self_judgment + isolation + over_identification
+df7 <- data.frame(ies_r_score, neuroticism, avoiding_strategies, neg_self_compassion)
+```"

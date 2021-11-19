@@ -1,0 +1,53 @@
+TITLE: 2 factor bi-factor ESEM with correlated residuals.
+
+DATA:
+  FILE IS selfcompassionitems.dat;
+
+VARIABLE:
+  NAMES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 
+            scsk23 scoi24 scis25 scsk26; 
+  MISSING ARE ALL(-9);
+  USEVARIABLES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 
+            scsk23 scoi24 scis25 scsk26; 
+  ! CATEGORICAL ARE all;
+
+ANALYSIS:
+  ! Requesting the weighted least squares mean- and variance-adjusted estimator
+  ESTIMATOR = MLR;
+  ROTATION = target;
+
+MODEL:
+  sc BY scsk5* scsk12 scsk19 scsk23 scsk26 scsj1 scsj8 scsj11 
+        scsj16 scsj21 scch3 scch7 scch10 scch15 scis4 scis13 
+        scis18 scis25 scmi9 scmi14 scmi17 scmi22 scoi2 scoi6 
+        scoi20 scoi24 (*1);
+
+  pos BY scsk5 scsk12 scsk19 scsk23 scsk26 scsj1~0 scsj8~0 scsj11~0 
+         scsj16~0 scsj21~0 scch3 scch7 scch10 scch15 scis4~0 scis13~0 
+         scis18~0 scis25~0 scmi9 scmi14 scmi17 scmi22 scoi2~0 scoi6~0 
+         scoi20~0 scoi24~0 (*1);
+  neg BY scsk5~0 scsk12~0 scsk19~0 scsk23~0 scsk26~0 scsj1 scsj8 scsj11 
+         scsj16 scsj21 scch3~0 scch7~0 scch10~0 scch15~0 scis4 scis13 
+         scis18 scis25 scmi9~0 scmi14~0 scmi17~0 scmi22~0 scoi2 scoi6 
+         scoi20 scoi24 (*1);
+
+  scch10 WITH scch7;
+  scis18 WITH scis13;
+
+! Requesting standardized parameter estimates
+OUTPUT: stdyx;
+
+! scch7: When I'm down and out, I remind myself that there are lots
+! of other people in the world feeling like I am.
+! scch10: When I feel inadequate in some way, I try to remind myself
+! that feelings of inadequacy are shared by most people.
+
+! scis13: When I'm feeling down, I tend to feel like most other people
+! are probably happier than I am.
+! scis18: When I'm really struggling, I tend to feel like other people
+! must be having an easier time of it.
+

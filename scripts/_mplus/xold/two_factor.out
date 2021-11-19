@@ -1,0 +1,33 @@
+Mplus VERSION 8.5 (Mac)
+MUTHEN & MUTHEN
+02/24/2021   6:35 AM
+
+INPUT INSTRUCTIONS
+
+  TITLE: 2-factor CFA with categorical indicator variables.
+  DATA:
+    FILE = SCS_20210224.csv;
+  VARIABLE:
+    NAMES = u1-u26 gender where;
+    MISSING = ALL (-9);
+    USEVARIABLES = u1-u26;
+  ANALYSIS:
+  MODEL:
+    F1 BY u1-u26;
+  OUTPUT: STDXY;
+
+*** ERROR in OUTPUT command
+  Unrecognized OUTPUT option:
+  STDXY
+
+
+MUTHEN & MUTHEN
+3463 Stoner Ave.
+Los Angeles, CA  90066
+
+Tel: (310) 391-9971
+Fax: (310) 391-8971
+Web: www.StatModel.com
+Support: Support@StatModel.com
+
+Copyright (c) 1998-2020 Muthen & Muthen

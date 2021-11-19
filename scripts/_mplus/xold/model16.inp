@@ -1,0 +1,36 @@
+TITLE: Higher order CFA.
+
+DATA:
+  FILE IS scsallsubjects.dat;
+  
+VARIABLE:
+  NAMES ARE u1-u26; ! gender where;
+  MISSING ARE ALL(-9);
+  USEVARIABLES ARE u1-u26;
+  CATEGORICAL ARE u1-u26;
+
+ANALYSIS: 
+  ! Requesting the weighted least squares mean- and variance-adjusted estimator
+  ! ESTIMATOR = WLSMV; 
+  ! Requesting the unweighted least squares estimator
+  ESTIMATOR = WLSMV; !ULSMV
+  ROTATION = target; 
+  
+MODEL:
+
+  pos1 BY u5 u12 u19 u23 u26; 
+  pos2 BY u3 u7 u10 u15;
+  pos3 BY u9 u14 u17 u22;
+  neg1 BY u1 u8 u11 u16 u21;
+  neg2 BY u4 u13 u18 u25;
+  neg3 BY u2 u6 u20 u24;
+  
+  pos BY pos1 pos2 pos3;
+  neg BY neg1 neg2 neg3;
+  
+! Requesting standardized parameter estimates
+OUTPUT: stdyx;
+
+
+
+

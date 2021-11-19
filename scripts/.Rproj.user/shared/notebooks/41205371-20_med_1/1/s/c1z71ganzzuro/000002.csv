@@ -1,0 +1,7 @@
+"0","```r
+df$gender <- fct_recode(
+  df$gender, 
+  \"female\" = \"Femmina\", 
+  \"male\" = \"Maschio\"
+)
+```"

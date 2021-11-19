@@ -1,0 +1,4 @@
+"0","```r
+df4 <- data.frame(agreeableness, coping, ptg)
+df4 <- df4[complete.cases(df4), ]
+```"

@@ -1,0 +1,17 @@
+TITLE: 2-factor CFA with categorical indicator variables.
+DATA:
+  FILE = scs.dat;
+VARIABLE:
+  NAMES = u1-u26 gender where;
+  MISSING = ALL (-9);
+  USEVARIABLES = u1-u26 gender where;
+  CATEGORICAL = u1-u26;
+ANALYSIS: 
+  ROTATION = TARGET;
+  !ESTIMATOR = MLR; !WLSMV; !default;
+MODEL:
+  FN BY u1 u8 u11 u16 u21 u4 u13 u18 u25 u2 u6 u20 u24 
+  u5~0 u12~0 u19~0 u23~0 u26~0 u3~0 u7~0 u10~0 u15~0 u9~0 u14~0 u17~0 u22~0(*1); 
+  FP BY u5 u12 u19 u23 u26 u3 u7 u10 u15 u9 u14 u17 u22 
+  u1~0 u8~0 u11~0 u16~0 u21~0 u4~0 u13~0 u18~0 u25~0 u2~0 u6~0 u20~0 u24~0(*1);
+OUTPUT: STDYX CINTERVAL;

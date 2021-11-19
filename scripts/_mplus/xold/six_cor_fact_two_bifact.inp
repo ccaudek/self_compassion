@@ -1,0 +1,29 @@
+TITLE: Six correlated factors, two-bifactor model.
+
+DATA:
+  FILE IS scs.dat;
+
+VARIABLE:
+  NAMES ARE u1-u26;
+  MISSING ARE ALL(-9);
+  USEVARIABLES ARE u1-u26;
+  CATEGORICAL ARE u1-u26;
+
+ANALYSIS:
+  ESTIMATOR = WLSMV;
+  ROTATION = TARGET;
+
+MODEL:
+  FG1 BY u1 u8  u11 u16 u21 u4 u13 u18 u25 u2 u6  u20 u24;
+  FG2 BY u5 u12 u19 u23 u26 u3 u7  u10 u15 u9 u14 u17 u22;
+  SJ  BY u1 u8  u11 u16  u21; !Self-Judgment;
+  IS  BY u4 u13 u18 u25;      !Isolation Items;
+  OI  BY u2 u6  u20 u24;      !Over-identified;
+  SK  BY u5 u12 u19 u23  u26; !Self-Kindness;
+  CU  BY u3 u7  u10 u15;      !Common Humanity;
+  MI  BY u9 u14 u17 u22;      !Mindfulness;
+
+  FG1 WITH SJ-MI@0;
+  FG2 WITH SJ-MI@0;
+
+OUTPUT: STDYX;

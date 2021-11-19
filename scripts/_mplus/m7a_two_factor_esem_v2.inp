@@ -1,0 +1,39 @@
+TITLE: 2 factor ESEM v2 MLR.
+
+DATA:
+  FILE IS selfcompassionitems.dat;
+
+VARIABLE:
+  NAMES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 
+            scsk23 scoi24 scis25 scsk26; 
+  MISSING ARE ALL(-9);
+  USEVARIABLES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 
+            scsk23 scoi24 scis25 scsk26; 
+  ! CATEGORICAL ARE all;
+
+ANALYSIS: 
+  ESTIMATOR = MLR; 
+  ROTATION = oblimin; 
+    
+MODEL:
+  pos BY scsj1@.06 scoi2@-.05 scch3@.41 scis4@-.070 scsk5@.65 scoi6@-.03 
+        scch7@0.49 scsj8@.01 scmi9@0.46 scch10@0.55 scsj11@.02 scsk12@.69 
+        scis13@-.04 scmi14@0.47 scch15@0.66 scsj16@-0.01 scmi17@0.58 
+        scis18@0.03 scsk19@0.70 scoi20@0.07 scsj21@0.02 scmi22@0.65 
+        scsk23@0.56 scoi24@-0.01 scis25@-0.04 scsk26@0.64;
+  neg BY scsj1@.49 scoi2@.78 scch3@.22 scis4@.78 scsk5@.13 scoi6@.79 
+        scch7@.33 scsj8@.70 scmi9@.07 scch10@.24 scsj11@.68 scsk12@-.03 
+        scis13@.71 scmi14@-.17 scch15@.02 scsj16@.69 scmi17@-.2 
+        scis18@.77 scsk19@-.06 scoi20@.64 scsj21@.56 scmi22@-.05 
+        scsk23@-.22 scoi24@0.62 scis25@.75 scsk26@-.06;
+  pos@1;
+  neg@1;
+  
+OUTPUT: stdyx;
+
+
+

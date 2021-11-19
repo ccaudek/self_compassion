@@ -1,0 +1,1009 @@
+---
+title: "Emergency psychology"
+author: "[Corrado Caudek](https://ccaudek.github.io/)"
+date: "First version 2019-02-14. Last modified `r format(Sys.time(), '%Y-%m-%d')`"
+output:
+  html_document:
+    fig_caption: yes
+    highlight: pygments
+    toc: TRUE
+    toc_depth: 2
+    number_sections: TRUE
+    toc_float:
+      smooth_scroll: FALSE
+---
+
+# Set up
+```{r setup, include=FALSE}
+suppressPackageStartupMessages(library("here"))
+```
+
+
+## Packages
+```{r}
+suppressPackageStartupMessages(library("googlesheets"))
+suppressPackageStartupMessages(library("tidyverse"))
+suppressPackageStartupMessages(library("lavaan"))
+suppressPackageStartupMessages(library("mice"))  
+```
+
+Which google sheets do you have access to?
+```{r}
+# gs_ls()
+```
+
+Get the google sheet
+```{r}
+thedat <- gs_title("Sei un soccorritore in Emergenza? (Risposte)")
+```
+
+List worksheets
+```{r}
+gs_ws_ls(thedat)
+```
+
+Get data and convert to data.frame
+```{r}
+dat <- gs_read(ss=thedat, ws = "Risposte del modulo 1", skip=1)
+df <- as.data.frame(dat)
+```
+
+Rename variables
+```{r}
+df <- df %>% 
+  rename(
+    date = `Informazioni cronologiche`,
+    permission = `Trattamento dei dati personali`,
+    id = `Inserisci il codice identificativo come sopra indicato:`,
+    gender = Sesso,
+    education = `Livello istruzione`,
+    employment =  Occupazione,
+    is_rescue_worker = `Sei un Soccorritore in Emergenza?`,
+    red_cross_commeetee_location =  `Comitato Croce Rossa Italiana di appartenenza (per es. Comitato di Firenze)`,
+    rescue_worker_qualification =  `Possiedi la qualifica TSSA/PTSI?`, 
+    last_training = `Quando hai effettuato l'ultimo re-training, corso, inerente la qualifica TSSA/FULL-D?`,
+    rate_of_activity =  `Con quale frequenza fai turno in Ambulanza?`,
+    job_qualification =  `Generalmente fai turno sempre con la stessa squadra?`,
+    is_job_qualification_invariant= `Generalmente fai turno sempre con la stessa squadra?`,
+    age =  X231,
+  ) 
+```
+
+The data.frame contains the following scales:
+
+- NEO_FFI_60: 60 items, from X16 to X75. The NEO-FFI is a 60-item psychological personality inventory that assesses based on the five-factor model: Openness to Experience, Conscientiousness, Extraversion, Agreeableness, and Neuroticism. Participants are asked to select the response that best represents their opinion on a 5-point scale: 0-Strongly Agree, 1-Agree, 2-Neutral, 3-Disagree, 4-Strongly Disagree.
+
+- COPE_NVI: 60 items, from X76 to X135. (Coping Orientation to Problems Experienced-Nuova Versione Italiana (COPE-NVI). The COPE-New Italian Version (COPE-NIV) represents an improvement of the previous Italian version of the COPE. La prima valutazione condotta è basata sulla media del punteggio totale del COPE-NVI. Tale punteggio è inteso come la somma dei punteggi attribuiti dai singoli rispondenti alle 60 domande. Il punteggio complessivo può essere considerato un indice di quanto la persona reagisca allo stress: maggiore è il punteggio, maggiore è il benessere psicologico di fronte a situazioni stressanti. Cinque dimensioni: Orientamento al problema, Attitudine positiva, Sostegno sociale, Evitamento, Orientamento trascendente.
+
+- PTGI: 29 items, X136 to X143, X144 to X164. The Posttraumatic Growth Inventory was developed to assess positive outcomes in response totraumatic events. Five factors: Factor I: Relating to Others, Factor II: New Possibilities, Factor III: Personal Strength, Factor IV: Spiritual Change, and Factor V: Appreciation for Life.
+
+- IES_R: 28 items, items X165 to X170, X171 to X192 (Impact of Event Scale - Revised). The IES-R is a 22-item self-report measure (for DSM-IV) that assesses subjective distress caused by traumatic events. It is a revised version of the older version, the 15-item IES (Horowitz, Wilner, & Alvarez, 1979). The IES-R contains seven additional items related to the hyperarousal symptoms of PTSD, which were not included in the original IES. Items correspond directly to 14 of the 17 DSM-IV symptoms of PTSD. Respondents are asked to identify a specific stressful life event and then indicate how much they were distressed or bothered during the past seven days by each "difficulty" listed. Items are rated on a 5-point scale ranging from 0 ("not at all") to 4 ("extremely"). The IES-R yields a total score (ranging from 0 to 88) and subscale scores can also be calculated for the Intrusion, Avoidance, and Hyperarousal subscales.
+
+- SCS: 26 items, items X193 to 218. The  SCS (Neff,  2003a) is a 26-item  self-report  questionnaire measuring the six components of self-compassion: Self-Kindness(5 items; e.g., “I try to be loving towards myself when I’m feelingemotional pain”), reduced Self-Judgment (5 items; e.g., “I’m dis-approving  and  judgmental  about  my  own  flaws  and  inadequa-cies”), Common Humanity (4 items, e.g., “When things are goingbadly for me, I see the difficulties as part of life that everyone goesthrough”), reduced Isolation (4 items, e.g., “When I think about myinadequacies it tends to make me feel more separate and cut offfrom the rest of the world”), Mindfulness (4 items, e.g., “When I’mfeeling  down  I  try  to  approach  my  feelings  with  curiosity  andopenness”), and reduced Overidentification (4 items, e.g., “Whensomething upsets me I get carried away with my feelings”).
+
+- MSPSS: 12 items, items X219 to 230 (Multidimensional Scale of Perceived Social Support, MSPSS). The MSPSS is a short instrument designed to measure an individual’s perception of support from 3 sources: family, friends and a significant other. To calculate total score: Sum across all 12 items. This total score can also be calculated as a mean score (divide by 12). To calculate the mean subscale scores:
+Significant Other Subscale: Sum across items 1, 2, 5, & 10, then divide by 4.
+Family Subscale: Sum across items 3, 4, 8, & 11, then divide by 4.
+Friends Subscale: Sum across items 6, 7, 9, & 12, then divide by 4.
+
+
+
+# Scala neo_ffi_60
+
+Let start with the coding of neo_ffi_60. First, we select the right columns:
+```{r}
+neo_ffi_60 <- df %>% 
+  select(X16:X75)
+```
+
+Then we change the column names to facilitate coding
+```{r}
+item_names <- paste0("i", 1:60)
+names(neo_ffi_60) <- item_names
+```
+
+Some items are reversed. In that cases, we can compute the right value by using the following formula: abs(x - max).
+
+The first factor of neo_ffi_60 is called neutoticism and is composed by two subscales. The scores on such scales are the following:
+
+```{r}
+negative_affect <- 
+  abs(neo_ffi_60$i1 - 4) + neo_ffi_60$i11 + abs(neo_ffi_60$i16 - 4) + 
+  abs(neo_ffi_60$i31 - 4) + abs(neo_ffi_60$i46 - 4)
+```
+
+
+
+```{r}
+self_reproach <-
+neo_ffi_60$i6 + neo_ffi_60$i21 + neo_ffi_60$i26 + neo_ffi_60$i36 + neo_ffi_60$i41 + neo_ffi_60$i51 + neo_ffi_60$i56
+```
+
+```{r}
+neuroticism <- negative_affect + self_reproach
+```
+
+Just to take a look to the data, an histogram of neuroticism is
+```{r}
+hist(neuroticism)
+```
+
+
+The second factor of neo_ffi_60 is called extraversion and is composed by three subscales. The scores on such scales are the following:
+```{r}
+positive_affect <-
+neo_ffi_60$i7 + abs(neo_ffi_60$i12 - 4) + neo_ffi_60$i37
+ + abs(neo_ffi_60$i42 - 4)
+```
+
+
+```{r}
+sociability <- 
+neo_ffi_60$i2 + neo_ffi_60$i17 + abs(neo_ffi_60$i27 - 4) + abs(neo_ffi_60$i57 - 4)
+```
+
+
+```{r}
+activity <- 
+neo_ffi_60$i22 + neo_ffi_60$i32 + neo_ffi_60$i47 + neo_ffi_60$i52
+```
+
+
+```{r}
+extraversion <- positive_affect + sociability + activity
+```
+
+Just to take a look to the data, an histogram of estraversion is
+```{r}
+hist(extraversion)
+```
+
+
+The third factor of neo_ffi_60 is called openness and is composed by three subscales. The scores on such scales are the following:
+```{r}
+aesthetic_interests <- 
+neo_ffi_60$i13 + abs(neo_ffi_60$i23 - 4) + neo_ffi_60$i43
+```
+
+
+```{r}
+intellectual_interests <- 
+abs(neo_ffi_60$i48 - 4) + neo_ffi_60$i53 + neo_ffi_60$i58
+```
+
+
+```{r}
+unconventionality <- 
+abs(neo_ffi_60$i3 - 4) + abs(neo_ffi_60$i8 - 4) + abs(neo_ffi_60$i18 - 4) + abs(neo_ffi_60$i38 - 4)
+```
+
+
+```{r}
+openness <- aesthetic_interests + intellectual_interests + unconventionality
+```
+
+Just to take a look to the data, an histogram of openness is
+```{r}
+hist(openness)
+```
+
+
+The fourth factor of neo_ffi_60 is called agreeableness and is composed by two subscales. The scores on such scales are the following:
+```{r}
+nonantagonistic_orientation <- 
+abs(neo_ffi_60$i9 - 4) + abs(neo_ffi_60$i14 - 4) + neo_ffi_60$i19 +  abs(neo_ffi_60$i24 - 4) + abs(neo_ffi_60$i29 - 4) + abs(neo_ffi_60$i44 - 4) + abs(neo_ffi_60$i54 - 4) + abs(neo_ffi_60$i59 - 4)
+```
+
+
+```{r}
+prosocial_orientation <- 
+neo_ffi_60$i4 + neo_ffi_60$i34 + abs(neo_ffi_60$i39 - 4) + neo_ffi_60$i49
+```
+
+
+```{r}
+agreeableness <- nonantagonistic_orientation + prosocial_orientation
+```
+
+Just to take a look to the data, an histogram of agreeableness is
+```{r}
+hist(agreeableness)
+```
+
+
+The fifth factor of neo_ffi_60 is called conscientiousness and is composed by three subscales. The scores on such scales are the following:
+```{r}
+orderliness <- 
+neo_ffi_60$i5 +  neo_ffi_60$i10 + abs(neo_ffi_60$i15 - 4) + abs(neo_ffi_60$i30 - 4) + abs(neo_ffi_60$i55 - 4)
+```
+
+
+```{r}
+goal_striving <- 
+neo_ffi_60$i25 +  neo_ffi_60$i35 + neo_ffi_60$i60
+```
+
+
+```{r}
+dependability <- 
+neo_ffi_60$i20 +  neo_ffi_60$i40 + abs(neo_ffi_60$i45 - 4) + neo_ffi_60$i50
+```
+
+
+```{r}
+conscientiousness <- orderliness + goal_striving + dependability
+```
+
+Just to take a look to the data, an histogram of conscientiousness is
+```{r}
+hist(conscientiousness)
+```
+
+# Scala COPE NVI
+
+Let start with the coding of cope_nvi. First, we select the right columns:
+```{r}
+cope_nvi <- df %>% 
+  select(X76:X135)
+```
+
+Then we change the column names to facilitate coding
+```{r}
+item_names <- paste0("ii", 1:60)
+names(cope_nvi) <- item_names
+```
+
+Some items are reversed. In that cases, we can compute the right value by using the following formula: abs(x - max).
+
+The first subscale of cope_nvi is called social support. The scores on such scales are the following:
+```{r}
+social_support <- 
+cope_nvi$ii4 + cope_nvi$ii14 + cope_nvi$ii30 + cope_nvi$ii45 + cope_nvi$ii11 + cope_nvi$ii23 + cope_nvi$ii34 + cope_nvi$ii52 + cope_nvi$ii3 + cope_nvi$ii17 + cope_nvi$ii28 + cope_nvi$ii46
+```
+
+```{r}
+hist(social_support)
+```
+
+The second subscale of cope_nvi is called avoiding strategies. The scores on such scale are the following:
+```{r}
+avoiding_strategies <- 
+cope_nvi$ii6 + cope_nvi$ii27 + cope_nvi$ii40 + cope_nvi$ii57 + cope_nvi$ii9 + cope_nvi$ii24 + cope_nvi$ii37 + cope_nvi$ii51 + cope_nvi$ii2 + cope_nvi$ii16 + cope_nvi$ii31 + cope_nvi$ii43 +  cope_nvi$ii12 +  cope_nvi$ii26 +  cope_nvi$ii43 +  cope_nvi$ii35 +  cope_nvi$ii53
+```
+
+```{r}
+hist(avoiding_strategies)
+```
+
+The third subscale of cope_nvi is called positive attitude. The scores on such scale are the following:
+```{r}
+positive_attitude <- 
+cope_nvi$ii10 + cope_nvi$ii22 + cope_nvi$ii41 + cope_nvi$ii49 + cope_nvi$ii1 + cope_nvi$ii29 + cope_nvi$ii38 + cope_nvi$ii59 + cope_nvi$ii13 + cope_nvi$ii21 + cope_nvi$ii44 + cope_nvi$ii54
+```
+
+```{r}
+hist(positive_attitude)
+```
+
+The fourth subscale of cope_nvi is called problem orientation. The scores on such scale are the following:
+```{r}
+problem_orientation <- 
+cope_nvi$ii5 + cope_nvi$ii25 + cope_nvi$ii47 + cope_nvi$ii58 + cope_nvi$ii19 + cope_nvi$ii32 + cope_nvi$ii39 + cope_nvi$ii56 + cope_nvi$ii15 + cope_nvi$ii33 + cope_nvi$ii42 + cope_nvi$ii55
+```
+
+```{r}
+hist(problem_orientation)
+```
+
+The fifth subscale of cope_nvi is called transcendent orientation. The scores on such scale are the following:
+```{r}
+transcendent_orientation <- 
+abs(cope_nvi$ii8 - 5) + abs(cope_nvi$ii20 - 5) + abs(cope_nvi$ii36 - 5) + abs(cope_nvi$ii50 - 5) + cope_nvi$ii7 + cope_nvi$ii18 + cope_nvi$ii48 + cope_nvi$ii60
+```
+
+```{r}
+hist(transcendent_orientation)
+```
+
+
+# Scala PTGI
+
+Let start with the coding of ptgi. First, we select the right columns:
+```{r}
+ptgi1 <- df %>% 
+  select(X136:X143)
+```
+
+
+```{r}
+ptgi2 <- df %>% 
+  select(X144:X164)
+```
+
+Then we change the column names to facilitate coding
+```{r}
+item_names <- paste0("it", 1:8)
+names(ptgi1) <- item_names
+```
+
+COME CODIFICARE LE VARIABILI DI PTGI1??????
+
+```{r}
+item_names <- paste0("iii", 1:21)
+names(ptgi2) <- item_names
+```
+
+```{r}
+interpersonal_relationships <-
+  ptgi2$iii15 + ptgi2$iii20 + ptgi2$iii9 + ptgi2$iii21 + ptgi2$iii8 + ptgi2$iii16 + ptgi2$iii6
+```
+
+```{r}
+hist(interpersonal_relationships)
+```
+
+
+```{r}
+new_possibilities <-
+  ptgi2$iii11 + ptgi2$iii7 + ptgi2$iii3 + ptgi2$iii17 + ptgi2$iii14
+```
+
+```{r}
+hist(new_possibilities)
+```
+
+```{r}
+personal_strength <-
+  ptgi2$iii10 + ptgi2$iii19 + ptgi2$iii4 + ptgi2$iii12
+```
+
+```{r}
+hist(personal_strength)
+```
+
+```{r}
+life_appreciation <-
+  ptgi2$iii13 + ptgi2$iii2 + ptgi2$iii1
+```
+
+```{r}
+hist(life_appreciation)
+```
+
+
+```{r}
+spirituality_changes <-
+  ptgi2$iii5 + ptgi2$iii18
+```
+
+```{r}
+hist(spirituality_changes)
+```
+
+
+# Scala IES-R
+
+Let start with the coding of ies_r. First, we select the right columns:
+```{r}
+ies_r1 <- df %>% 
+  select(X165:X170)
+```
+
+```{r}
+ies_r2 <- df %>% 
+  select(X171:X192)
+```
+
+
+Then we change the column names to facilitate coding
+```{r}
+item_names <- paste0("iit", 1:6)
+names(ies_r2) <- item_names
+```
+
+COME CODIFICARE QUESTI 6 ITEMS????
+
+
+```{r}
+item_names <- paste0("iiii", 1:22)
+names(ies_r2) <- item_names
+```
+
+
+Il massimo punteggio medio di ognuna delle 3 subscale h 4, quindi il punteggio
+medio totale massimo della scala IES-R h 12. Bassi punteggi sono migliori. Un
+punteggio totale alla IES-R di 33 o superiore su un punteggio massimo di 88
+significa la probabile presenza di un PTSD.
+
+
+```{r}
+avoiding <- 
+  ies_r2$iiii5 + ies_r2$iiii7 + ies_r2$iiii8 + ies_r2$iiii11 + ies_r2$iiii12 + ies_r2$iiii13 + ies_r2$iiii17 + ies_r2$iiii22
+```
+
+```{r}
+hist(avoiding)
+```
+
+```{r}
+intrusivity <- 
+  ies_r2$iiii1 + ies_r2$iiii2 + ies_r2$iiii3 + ies_r2$iiii6 + ies_r2$iiii9 + ies_r2$iiii14 + ies_r2$iiii16 + ies_r2$iiii20
+```
+
+```{r}
+hist(intrusivity)
+```
+
+```{r}
+iperarousal <-  
+  ies_r2$iiii4 + ies_r2$iiii10 + ies_r2$iiii15 + ies_r2$iiii18 + ies_r2$iiii19 + ies_r2$iiii21
+```
+
+```{r}
+hist(iperarousal)
+```
+
+```{r}
+ies_r_score <- avoiding + intrusivity + iperarousal
+```
+
+```{r}
+hist(ies_r_score)
+```
+
+
+I punteggi delle sottoscale del scs sono ottenuti calcolando la media delle risposte nei rispettivi item.
+Quindi calcolare la media dei punteggi medi delle sei sottoscale. COME SI FA?
+
+
+In this approach any mean scale score ranging from 1 to 2.9 could be considered low support; a score of 3 to 5 could be considered moderate support; a score from 5.1 to 7 could be considered high support. This approach would seem to have more
+validity, but if you have very few respondents in any of the groups, it could be problematic.
+
+
+# Scala SCS
+
+Let start with the coding of scs. First, we select the right columns:
+```{r}
+scs <- df %>% 
+  select(X193:X218)
+```
+
+Then we change the column names to facilitate coding
+```{r}
+item_names <- paste0("iiiii", 1:26)
+names(scs) <- item_names
+```
+
+```{r}
+self_kindness <- 
+  scs$iiiii5 + scs$iiiii12 + scs$iiiii19 + scs$iiiii23 + scs$iiiii26
+```
+
+```{r}
+hist(self_kindness)
+```
+
+```{r}
+self_judgment <- 
+  abs(scs$iiiii1 - 6) + abs(scs$iiiii8 - 6) + abs(scs$iiiii11 - 6) + abs(scs$iiiii16 - 6) + abs(scs$iiiii21 - 6)
+```
+
+```{r}
+hist(self_judgment)
+```
+
+```{r}
+common_humanity <- 
+  scs$iiiii3 + scs$iiiii7 + scs$iiiii10 + scs$iiiii15
+```
+
+```{r}
+hist(common_humanity)
+```
+
+```{r}
+isolation <- 
+  abs(scs$iiiii4 - 6) + abs(scs$iiiii13 - 6) + abs(scs$iiiii18 - 6) + abs(scs$iiiii25 - 6)
+```
+
+```{r}
+hist(isolation)
+```
+
+```{r}
+mindfulness <- 
+  scs$iiiii9 + scs$iiiii14 + scs$iiiii17 + scs$iiiii22
+```
+
+```{r}
+hist(mindfulness)
+```
+
+```{r}
+over_identification <- 
+  abs(scs$iiiii2 - 6) + abs(scs$iiiii6 - 6) + abs(scs$iiiii20 - 6) + abs(scs$iiiii24 - 6)
+```
+
+```{r}
+hist(over_identification)
+```
+
+
+# Scala MSPSS
+
+Let start with the coding of mspss. First, we select the right columns:
+```{r}
+mspss <- df %>% 
+  select(X219:X230)
+```
+
+Then we change the column names to facilitate coding
+```{r}
+item_names <- paste0("iiiiii", 1:12)
+names(mspss) <- item_names
+```
+
+```{r}
+family <- 
+  mspss$iiiiii3 + mspss$iiiiii4 + mspss$iiiiii8 + mspss$iiiiii11
+```
+
+```{r}
+hist(family)
+```
+
+```{r}
+friends <- 
+  mspss$iiiiii6 + mspss$iiiiii7 + mspss$iiiiii9 + mspss$iiiiii12
+```
+
+```{r}
+hist(friends)
+```
+
+```{r}
+significant_other <-
+  mspss$iiiiii1 + mspss$iiiiii2 + mspss$iiiiii5 + mspss$iiiiii10
+```
+
+```{r}
+hist(significant_other)
+```
+
+
+
+# Replication of path model of Mattson, James, & Engdahl (2018) - Figure 2
+
+Figure 2: 
+Adaptive Coping 
+
+```{r}
+coping <- social_support + positive_attitude + problem_orientation + transcendent_orientation
+ptg <- life_appreciation + new_possibilities + personal_strength + spirituality_changes + interpersonal_relationships
+
+df <- data.frame(openness, coping, ptg)
+```
+
+## Multiple imputation
+
+```{r}
+temp_data <- mice(df, m=5, maxit=50, meth='pmm', seed=500)
+```
+
+
+```{r}
+imp_data <- complete(temp_data, 1)
+
+```
+
+# Mediational analysis (1)
+
+Here, we consider the path analysis model of Mattson, James, & Engdahl (2018) described in their Figure 2.
+
+X: openness
+Y: ptg
+M: coping
+
+```{r}
+imp_data <- imp_data %>% 
+  dplyr::rename(
+    X = openness,
+    Y = ptg,
+    M = coping
+  )
+```
+
+
+```{r}
+model <- ' # direct effect
+             Y ~ c*X
+           # mediator
+             M ~ a*X
+             Y ~ b*M
+           # indirect effect (a*b)
+             ab := a*b
+           # total effect
+             total := c + (a*b)
+         '
+```
+
+
+```{r}
+set.seed(1234)
+fit1 <- sem(model, data = imp_data)
+summary(fit1)
+```
+
+
+# Mediational analysis (2)
+
+
+```{r}
+df2 <- data.frame(extraversion, coping, ptg)
+```
+
+X: extraversion
+Y: ptg
+M: coping
+
+## Multiple imputation
+
+```{r}
+temp_data_2 <- mice(df2, m=5, maxit=50, meth='pmm', seed=500)
+```
+
+
+```{r}
+imp_data_2 <- complete(temp_data_2, 1)
+```
+
+```{r}
+imp_data_2 <- imp_data_2 %>% 
+  dplyr::rename(
+    X = extraversion,
+    Y = ptg,
+    M = coping
+  )
+```
+
+```{r}
+model2 <- ' # direct effect
+             Y ~ c*X
+           # mediator
+             M ~ a*X
+             Y ~ b*M
+           # indirect effect (a*b)
+             ab := a*b
+           # total effect
+             total := c + (a*b)
+         '
+```
+
+
+```{r}
+set.seed(1234)
+fit2 <- sem(model2, data = imp_data_2)
+summary(fit2)
+```
+
+
+# Replication of path model of Mattson, James, & Engdahl (2018) - Figure 3
+
+```{r}
+df <- data.frame(ies_r_score, neuroticism, avoiding_strategies)
+```
+
+## Multiple imputation
+
+```{r}
+temp_data <- mice(df, m=5, maxit=50, meth='pmm', seed=500)
+```
+
+
+```{r}
+imp_data <- complete(temp_data, 1)
+```
+
+## Mediational analysis 
+
+Here, we consider the path analysis model of Mattson, James, & Engdahl (2018) described in their Figure 3.
+
+X: neuroticism
+Y: ies_r_score
+M: avoiding_strategies
+
+```{r}
+imp_data <- imp_data %>% 
+  dplyr::rename(
+    X = neuroticism,
+    Y = ies_r_score,
+    M = avoiding_strategies
+  )
+```
+
+
+```{r}
+model <- ' # direct effect
+             Y ~ c*X
+           # mediator
+             M ~ a*X
+             Y ~ b*M
+           # indirect effect (a*b)
+             ab := a*b
+           # total effect
+             total := c + (a*b)
+         '
+```
+
+
+```{r}
+set.seed(1234)
+fit3 <- sem(model, data = imp_data)
+summary(fit3)
+```
+
+
+
+# Negative Self-compassion as mediating factor 
+
+```{r}
+neg_self_compassion <- self_judgment + isolation + over_identification
+```
+
+
+```{r}
+df <- data.frame(ies_r_score, neuroticism, neg_self_compassion)
+```
+
+## Multiple imputation
+
+```{r}
+temp_data <- mice(df, m=5, maxit=50, meth='pmm', seed=500)
+```
+
+
+```{r}
+imp_data <- complete(temp_data, 1)
+```
+
+## Mediational analysis 
+
+Let us consider the path analysis model of Mattson, James, & Engdahl (2018) described in their Figure 3, but with negative self-compassion instead of maladaptive coping.
+
+
+```{r}
+imp_data <- imp_data %>% 
+  dplyr::rename(
+    X = neuroticism,
+    Y = ies_r_score,
+    M = neg_self_compassion
+  )
+```
+
+
+```{r}
+model <- ' # direct effect
+             Y ~ c*X
+           # mediator
+             M ~ a*X
+             Y ~ b*M
+           # indirect effect (a*b)
+             ab := a*b
+           # total effect
+             total := c + (a*b)
+         '
+```
+
+
+```{r}
+set.seed(1234)
+fit3 <- sem(model, data = imp_data)
+summary(fit3)
+```
+
+
+
+
+# Positive Self-compassion as mediating factor 
+
+```{r}
+pos_self_compassion <- self_kindness + common_humanity + mindfulness
+```
+
+
+```{r}
+df <- data.frame(ptg, extraversion, pos_self_compassion)
+```
+
+## Multiple imputation
+
+```{r}
+temp_data <- mice(df, m=5, maxit=50, meth='pmm', seed=500)
+```
+
+
+```{r}
+imp_data <- complete(temp_data, 1)
+```
+
+## Mediational analysis 
+
+Let us consider the path analysis model of Mattson, James, & Engdahl (2018) described in their Figure 2, but with positive self-compassion instead of adaptive coping.
+
+
+```{r}
+imp_data <- imp_data %>% 
+  dplyr::rename(
+    X = extraversion,
+    Y = ptg,
+    M = pos_self_compassion
+  )
+```
+
+
+```{r}
+model <- ' # direct effect
+             Y ~ c*X
+           # mediator
+             M ~ a*X
+             Y ~ b*M
+           # indirect effect (a*b)
+             ab := a*b
+           # total effect
+             total := c + (a*b)
+         '
+```
+
+
+```{r}
+set.seed(1234)
+fit3 <- sem(model, data = imp_data)
+summary(fit3)
+```
+
+
+
+
+# Both negative self compassion and avoiding strategies as mediators
+
+```{r}
+neg_self_compassion <- self_judgment + isolation + over_identification
+df <- data.frame(ies_r_score, neuroticism, avoiding_strategies, neg_self_compassion)
+```
+
+## Multiple imputation
+
+```{r}
+temp_data <- mice(df, m=5, maxit=50, meth='pmm', seed=500)
+```
+
+
+```{r}
+imp_data <- complete(temp_data, 1)
+```
+
+## Mediational analysis 
+
+We consider a path analysis model where both negative self-compassion and maladaptive coping are mediating factors
+
+X: neuroticism
+Y: ies_r_score
+M: avoiding_strategies
+
+```{r}
+imp_data <- imp_data %>% 
+  dplyr::rename(
+    X = neuroticism,
+    Y = ies_r_score,
+    M1 = avoiding_strategies,
+    M2 = neg_self_compassion
+  )
+```
+
+
+```{r}
+model <- ' # direct effect
+             Y ~ c*X
+           # mediator
+             M1 ~ a*X
+             Y ~ b*M1
+             M2 ~ d*X
+             Y ~ e*M2
+           # indirect effect (a*b)
+             ab := a*b 
+             de := d*e
+             abde := a*b + d*e
+           # total effect
+             total := c + (a*b) + (d*e)
+         '
+```
+
+
+```{r}
+set.seed(1234)
+fit <- sem(model, data = imp_data)
+summary(fit)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Positive Self-compassion as causal source and extraversion as the mediating factor 
+
+```{r}
+pos_self_compassion <- self_kindness + common_humanity + mindfulness
+```
+
+
+```{r}
+df <- data.frame(ptg, extraversion, pos_self_compassion)
+```
+
+## Multiple imputation
+
+```{r}
+temp_data <- mice(df, m=5, maxit=50, meth='pmm', seed=500)
+```
+
+
+```{r}
+imp_data <- complete(temp_data, 1)
+```
+
+## Mediational analysis 
+
+Let us consider the path analysis model of Mattson, James, & Engdahl (2018) described in their Figure 2, but with positive self-compassion instead of adaptive coping.
+
+
+```{r}
+imp_data <- imp_data %>% 
+  dplyr::rename(
+    X = pos_self_compassion ,
+    Y = ptg,
+    M = extraversion
+  )
+```
+
+
+```{r}
+model <- ' # direct effect
+             Y ~ c*X
+           # mediator
+             M ~ a*X
+             Y ~ b*M
+           # indirect effect (a*b)
+             ab := a*b
+           # total effect
+             total := c + (a*b)
+         '
+```
+
+
+```{r}
+set.seed(1234)
+fit3 <- sem(model, data = imp_data)
+summary(fit3)
+```
+
+
+
+```{r}
+cor.test(pos_self_compassion, coping, na.rm = TRUE)
+```
+
+
+
+```{r}
+cor.test(neg_self_compassion, avoiding_strategies, na.rm = TRUE)
+```
+

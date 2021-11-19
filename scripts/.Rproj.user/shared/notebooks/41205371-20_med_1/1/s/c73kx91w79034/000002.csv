@@ -1,0 +1,13 @@
+"0","```r
+mediation_model <- ' 
+  # direct effect
+  Y ~ c*X
+  # mediator
+  M ~ a*X
+  Y ~ b*M
+  # indirect effect (a*b)
+  ab := a*b
+  # total effect
+  total := c + (a*b)
+  '
+```"

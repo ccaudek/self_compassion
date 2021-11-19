@@ -1,0 +1,170 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Professional Formal Letter
+% LaTeX Template
+% Version 1.0 (28/12/13)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Brian Moses (http://www.ms.uky.edu/~math/Resources/Templates/LaTeX/)
+% with extensive modifications by Vel (vel@latextemplates.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%------------------------------------------------------------------------
+
+\documentclass[a4paper]{letter} % Specify the font size (10pt, 11pt and 12pt) and paper size (letterpaper, a4paper, etc)
+
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+
+\usepackage{graphicx} % Required for including pictures
+\usepackage{microtype} % Improves typography
+%\usepackage{gfsdidot} % Use the GFS Didot font: http://www.tug.dk/FontCatalogue/gfsdidot/
+\usepackage[T1]{fontenc} % Required for accented characters
+%\usepackage[bitstream-charter]{mathdesign}
+
+
+% Create a new command for the horizontal rule in the document which allows thickness specification
+\makeatletter
+\def\vhrulefill#1{\leavevmode\leaders\hrule\@height#1\hfill \kern\z@}
+\makeatother
+
+%----------------------------------------------------------------------------------------
+%	DOCUMENT MARGINS
+%----------------------------------------------------------------------------------------
+
+\textwidth 6.75in
+\textheight 9.25in
+\oddsidemargin -.25in
+\evensidemargin -.25in
+\topmargin -1in
+\longindentation 0.50\textwidth
+\parindent 0.4in
+
+%----------------------------------------------------------------------------------------
+%	SENDER INFORMATION
+%----------------------------------------------------------------------------------------
+
+\def\Who{Corrado Caudek} % Your name
+\def\What{, Ph.D.} % Your title
+\def\Where{NEUROFARBA Department} % Your department/institution
+\def\Address{Via di San Salvi, 12} % Your address
+\def\CityZip{50135 Firenze, Italy} % Your city, zip code, country, etc
+\def\Email{corrado.caudek@unifi.it} % Your email address
+\def\TEL{+39 055 2755043} % Your phone number
+\def\URL{http://www.caudeklab.org} % Your URL
+
+%----------------------------------------------------------------------------------------
+%	HEADER AND FROM ADDRESS STRUCTURE
+%----------------------------------------------------------------------------------------
+
+\address{
+\includegraphics[width=1in]{logo-unifi.png} % Include the logo of your institution
+\hspace{5.1in} % Position of the institution logo, increase to move left, decrease to move right
+\vskip -1.07in~\\ % Position of the text in relation to the institution logo, increase to move down, decrease to move up
+\Large\hspace{1.5in}UNIVERSIT\`A DEGLI \hfill ~\\[0.05in] % First line of institution name, adjust hspace if your logo is wide
+\hspace{1.5in}STUDI DI FIRENZE \hfill \normalsize % Second line of institution name, adjust hspace if your logo is wide
+\makebox[0ex][r]{\bf \Who \What }\hspace{0.08in} % Print your name and title with a little whitespace to the right
+~\\[-0.11in] % Reduce the whitespace above the horizontal rule
+\hspace{1.5in}\vhrulefill{1pt} \\ % Horizontal rule, adjust hspace if your logo is wide and \vhrulefill for the thickness of the rule
+\hspace{\fill}\parbox[t]{2.85in}{ % Create a box for your details underneath the horizontal rule on the right
+\footnotesize % Use a smaller font size for the details
+\Who \\ \em % Your name, all text after this will be italicized
+\Where\\ % Your department
+\Address\\ % Your address
+\CityZip\\ % Your city and zip code
+\TEL\\ % Your phone number
+\Email\\ % Your email address
+\URL % Your URL
+}
+\hspace{-1.4in} % Horizontal position of this block, increase to move left, decrease to move right
+\vspace{-1in} % Move the letter content up for a more compact look
+}
+
+%----------------------------------------------------------------------------------------
+%	TO ADDRESS STRUCTURE
+%----------------------------------------------------------------------------------------
+
+\def\opening#1{\thispagestyle{empty}
+{\centering\fromaddress \vspace{0.6in} \\ % Print the header and from address here, add whitespace to move date down
+\hspace*{\longindentation}\today\hspace*{\fill}\par} % Print today's date, remove \today to not display it
+{\raggedright \toname \\ \toaddress \par} % Print the to name and address
+\vspace{0.4in} % White space after the to address
+\noindent #1 % Print the opening line
+% Uncomment the 4 lines below to print a footnote with custom text
+%\def\thefootnote{}
+%\def\footnoterule{\hrule}
+%\footnotetext{\hspace*{\fill}{\footnotesize\em Footnote text}}
+%\def\thefootnote{\arabic{footnote}}
+}
+
+%----------------------------------------------------------------------------------------
+%	SIGNATURE STRUCTURE
+%----------------------------------------------------------------------------------------
+
+\signature{\Who \What} % The signature is a combination of your name and title
+
+\long\def\closing#1{
+\vspace{0.1in} % Some whitespace after the letter content and before the signature
+\noindent % Stop paragraph indentation
+\hspace*{\longindentation} % Move the signature right
+\parbox{\indentedwidth}{\raggedright
+#1 % Print the signature text
+\vskip 0.65in % Whitespace between the signature text and your name
+\fromsig}} % Print your name and title
+
+%----------------------------------------------------------------------------------------
+
+\begin{document}
+
+%----------------------------------------------------------------------------------------
+%	TO ADDRESS
+%----------------------------------------------------------------------------------------
+
+\begin{letter}
+%{}
+{Douglas B. Samuel\\
+Purdue University, USA \\
+Editor\\
+}
+
+
+%----------------------------------------------------------------------------------------
+%	LETTER CONTENT
+%----------------------------------------------------------------------------------------
+
+\opening{Dear Dr. Samuel,}
+
+I am writing to submit our manuscript entitled ``The validity of the self-compassion scale: A study on post-traumatic growth and post-traumatic stress symptoms in a sample of rescue workers'' for consideration for publication in \emph{Assessment}. 
+
+The Self-Compassion Scale (SCS; Neff, 2003) has been one of the most successful new psychological scales that have been proposed in recent years. At the moment of the submission, a search with the keyword "Self-Compassion Scale" returned 7,800 results on Google Scholar. 
+
+Although it has been very successful, the SCS is also the object of a hotly debate: On the one side, the author strongly maintains that the construct of self-compassion, as measured by the SCS, can be articulated into 6 sub-scales, and that the total SCS score captures the intensity with which self-compassion is present in the responder. On the other side, a number of researchers have proposed that it is more useful to code the SCS in terms of a two-factor structure in which one dimension corresponds to the positively phrased items (self-kindness, common humanity, mindfulness) and the other dimension corresponds to the negatively phrased items (self-judgment, isolation, over-identification) -- Muris et al. (2019). This distinction has important consequences.  If we can isolate two opposite polarities in the construct, then a number of issues can be raised.  One issue concerns the fact that the negative dimension could be reduced to Negative Affect (Geiger et al., 2018). And so the question remains of what is the added value offered by the positive dimension. Another important issue concerns the relation between self-compassion and therapeutic intervention. If a bi-dimensional structure is justified, then it become possible to try to understand whether there is a relation between a specific psychological malfunctioning and one or the other of the two polarities of self-compassion, or whether is more beneficial to strengthen one or the other dimension.
+
+So far, this debate has been carried out almost exclusively in terms of the factor structure of the SCS.  The results of such approach have been inconclusive. In our study we deal with this problem in a different manner. We considered the relations between self-compassion and other psychological constructs in a larger nomological network (if we examine self-compassion, coping, post-traumatic stress, and post-traumatic growth, does a SEM model produce a better fit when self-compassion is operationalized in terms of a single construct, or when it is operationalized in terms of a bipolar construct?). We also examined a large sample of rescue workers by hypothesizing that such participants had a larger probability of developing self-compassion and post-traumatic growth than the undergraduate students that had been usually considered in previous studies.
+
+Our results are very clear and provide a useful contribution to this debate.
+
+Our manuscript describes an original work and is not under consideration by any other Journal. 
+All authors approved the manuscript and its submission in the present version.    
+
+
+\bigskip
+\bigskip
+
+\closing{With kind regards,}
+
+
+
+
+%----------------------------------------------------------------------------------------
+
+\end{letter}
+\end{document}

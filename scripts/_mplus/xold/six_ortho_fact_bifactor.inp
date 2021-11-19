@@ -1,0 +1,53 @@
+TITLE: Bi-factor CFA.
+
+DATA:
+  FILE IS scs.dat;
+
+VARIABLE:
+  NAMES ARE u1-u26;
+  MISSING ARE ALL(-9);
+  USEVARIABLES ARE u1-u26;
+  CATEGORICAL ARE u1-u26;
+
+ANALYSIS:
+  ESTIMATOR = WLSMV; 
+  PROCESSORS = 4;
+MODEL:
+  FG by u1 u2-u26;
+  SJ BY u1 u8  u11 u16  u21; !Self-Judgment;
+  IS BY u4 u13 u18 u25;      !Isolation Items;
+  OI BY u2 u6  u20 u24;      !Over-identified;
+  SK BY u5 u12 u19 u23  u26; !Self-Kindness;
+  CU BY u3 u7  u10 u15;      !Common Humanity;
+  MI BY u9 u14 u17 u22;      !Mindfulness;
+
+! All factors are specified as orthogonal, with their
+! correlations (WITH) constrained to be 0 (@0).
+fG WITH SJ@0;
+fG WITH IS@0;
+fG WITH OI@0;
+fG WITH SK@0;
+fG WITH CU@0;
+fG WITH MI@0;
+
+SJ WITH IS@0;
+SJ WITH OI@0;
+SJ WITH SK@0;
+SJ WITH CU@0;
+SJ WITH MI@0;
+
+IS WITH OI@0;
+IS WITH SK@0;
+IS WITH CU@0;
+IS WITH MI@0;
+
+OI WITH SK@0;
+OI WITH CU@0;
+OI WITH MI@0;
+
+SK WITH CU@0;
+SK WITH MI@0;
+
+CU WITH MI@0;
+
+OUTPUT: STDYX CINTERVAL;

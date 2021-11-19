@@ -1,0 +1,150 @@
+---
+title: "Discarded models"
+output: html_notebook
+---
+
+# Model 6
+
+M6 is the same as M3, but it removes the positive component of self-compassion.
+
+```{r}
+M6 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation 
+
+  # self-compassion
+  nsc =~ NA*self_judgment + isolation + over_identification
+  
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # regressions
+  ptg  ~ cope + soc + nsc  
+  ptss ~ cope + soc + nsc  
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  nsc  ~~ 1*nsc
+"
+```
+
+Fit of M6.
+
+```{r}
+fit6 <- lavaan::sem(
+  M6,
+  data = df
+)
+```
+
+```{r}
+fitMeasures(fit6, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+The fit improves: 
+
+```{r}
+vuongtest(fit3, fit6)
+```
+
+```{r}
+summary(
+  fit6,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+
+# Model 7
+
+M7 is the same as M3, but it removes the negative component of self-compassion.
+
+```{r}
+M7 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation 
+  
+  # self-compassion
+  psc =~ NA*self_kindness + common_humanity + mindfulness
+
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # regressions
+  ptg  ~ cope + soc + psc 
+  ptss ~ cope + soc + psc 
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  psc  ~~ 1*psc
+"
+```
+
+Fit of M7.
+
+```{r}
+fit7 <- lavaan::sem(
+  M7,
+  data = df
+)
+```
+
+```{r}
+fitMeasures(fit7, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+```{r}
+vuongtest(fit3, fit7)
+```
+
+The fit improves.
+
+```{r}
+summary(
+  fit7,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+# Positive vs negative component of self-compassion
+
+The models M6 and M7 are not nested. So, they cannot be directly compared with a chi-square test. However, not-nested models can be compared with the Vuong test. The Vuong test has two components. The Variance test determine whether the models are distinguishable in the focal population. The non-nested likelihood ratio test provides a comparison between the fit of the two models.
+
+```{r}
+vuongtest(fit6, fit7)
+```
+
+Focusing on the variance test here, we obtain a large test statistic and a small p-value. These results imply that the two models are indeed distinguishable in the focal population.
+
+This allows us to move on to the second test, which compares the fits of the two models. Based on this second test, we conclude that the two models have equal fit in the population of interest. Note that fit is defined here in terms of Kullback-Leibler distance (between each candidate model and the true model), and we make no assumption about either of the two candidate models being the true model.
+
+In conclusion, it is not possible to choose between a model with only the positive or the negative component of self-compassion. The presence of either one of the two produces a good fit, but the fit decreases when they are both added to the model.
+
+
+

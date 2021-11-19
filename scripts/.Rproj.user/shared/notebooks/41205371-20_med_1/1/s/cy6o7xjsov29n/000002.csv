@@ -1,0 +1,4 @@
+"0","```r
+df3 <- data.frame(neuroticism, coping, ptg)
+df3 <- df3[complete.cases(df3), ]
+```"

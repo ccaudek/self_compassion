@@ -1,0 +1,488 @@
+---
+title: "Self-compassion and post-traumatic growth"
+author: "[Corrado Caudek](https://ccaudek.github.io/)"
+date: "First version 2019-02-14. Last modified `r format(Sys.time(), '%Y-%m-%d')`"
+output:
+  html_document:
+    fig_caption: yes
+    highlight: pygments
+    toc: TRUE
+    toc_depth: 2
+    number_sections: TRUE
+    toc_float:
+      smooth_scroll: FALSE
+---
+
+
+```{r}
+library("here")
+suppressPackageStartupMessages(library("tidyverse"))
+suppressPackageStartupMessages(library("lavaan"))
+suppressPackageStartupMessages(library("mice"))
+library("forcats")
+```
+
+
+```{r}
+source(here("libraries", "self_compassion_fnc.R"))
+```
+
+
+
+
+```{r}
+# To create the data, run:
+# source(here("04_import_data.R"))
+```
+
+
+# Read data
+
+```{r}
+mydata <- read.csv(
+  file=here("data", "rescue_workers.csv"), 
+  header=TRUE, 
+  sep=";"
+)
+```
+
+
+# Replication of the path model of Mattson, James, & Engdahl (2018), fig. 2: Adaptive Coping 
+
+
+```{r}
+## Multiple imputation
+# temp_data1 <- mice(df1, m=5, maxit=50, meth='pmm', seed=500, print = FALSE)
+# imp_data1 <- complete(temp_data1, 1)
+```
+
+
+## Mediational analysis (1)
+
+```{r}
+d <- data.frame(
+  x = mydata$openness, 
+  m = mydata$cope_nvi, 
+  y = mydata$ptg
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+Only indirect effect through COPE-NVI.
+
+
+## Mediational analysis (2)
+
+```{r}
+d <- data.frame(
+  x = mydata$extraversion, 
+  m = mydata$cope_nvi, 
+  y = mydata$ptg
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+Both direct effect than indirect effect though COPE-NVI.
+
+
+## Mediational analysis (3)
+
+```{r}
+d <- data.frame(
+  x = mydata$neuroticism, 
+  m = mydata$cope_nvi, 
+  y = mydata$ptg
+)
+d <- d[complete.cases(d), ]
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+Only indirect effect through coping.
+
+
+## Mediational analysis (4)
+
+```{r}
+d <- data.frame(
+  x = mydata$agreeableness, 
+  m = mydata$cope_nvi, 
+  y = mydata$ptg
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+Only indirect effect through coping.
+
+
+## Mediational analysis (5)
+
+```{r}
+d <- data.frame(
+  x = mydata$conscientiousness, 
+  m = mydata$cope_nvi, 
+  y = mydata$ptg
+)
+d <- d[complete.cases(d), ]
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+Both direct and indirect effects through coping.
+
+
+
+## Mediational analysis (6)
+
+Here, we consider the path analysis model of Mattson, James, & Engdahl (2018) 
+described in their Figure 3.
+
+X: neuroticism
+Y: ies_r_score (assesses subjective distress caused by traumatic events)
+M: avoiding_strategies (the second subscale of cope_nvi is called avoiding strategies)
+
+```{r}
+d <- data.frame(
+  x = mydata$neuroticism, 
+  m = mydata$avoiding_strategies,
+  y = mydata$ies
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+Both direct and indirect effects.
+
+
+## Self-compassion
+### Negative Self-compassion as mediating factor 
+
+Let us consider the path analysis model of Mattson, James, & Engdahl (2018) described in their Figure 3, but with negative self-compassion instead of maladaptive coping.
+
+```{r}
+d <- data.frame(
+  x = mydata$neuroticism, 
+  m = mydata$neg_self_compassion,
+  y = mydata$ies
+)
+d <- d[complete.cases(d), ]
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+
+
+
+### Positive Self-compassion as mediating factor 
+
+The path analysis model of Mattson, James, & Engdahl (2018) described in their 
+Figure 2, but with positive self-compassion instead of adaptive coping.
+
+
+```{r}
+d <- data.frame(
+  x = mydata$extraversion, 
+  m = mydata$pos_self_compassion,
+  y = mydata$ptg
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+
+
+### Positive Self-compassion as mediating factor with Openness
+
+```{r}
+d <- data.frame(
+  x = mydata$openness, 
+  m = mydata$pos_self_compassion,
+  y = mydata$ptg
+)
+d <- d[complete.cases(d), ]
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+
+### Negative self-compassion and maladaptive coping as mediators
+
+We consider a path analysis model where both negative self-compassion and 
+maladaptive coping are mediating factors:
+
+- X: neuroticism
+- Y: ies_r_score
+- M1: avoiding_strategies
+- M2: neg_self_compassion
+
+```{r}
+d <- data.frame(
+  y = mydata$ies, 
+  m1 = mydata$avoiding_strategies, 
+  m2 = mydata$neg_self_compassion,
+  x = mydata$neuroticism
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_2(d)
+summary(m)
+```
+
+
+
+### Negative and positive self compassion as mediators
+
+We consider a path analysis model where both negative self-compassion and 
+positive self-compassion are mediating factors:
+
+
+```{r}
+d <- data.frame(
+  x  = mydata$neuroticism, 
+  m1 = mydata$pos_self_compassion, 
+  m2 = mydata$neg_self_compassion,
+  y  = mydata$ies
+)
+d <- d[complete.cases(d), ]
+print(cor(d), 3)
+
+m <- mediation_an_2(d)
+summary(m)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- # Self Compassion is the same of coping strategies? -->
+
+<!-- ```{r} -->
+<!-- cor.test(pos_self_compassion, coping, na.rm = TRUE) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- plot(pos_self_compassion, coping) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- cor.test(neg_self_compassion, avoiding_strategies, na.rm = TRUE) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- plot(neg_self_compassion, avoiding_strategies) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- self_compassion <- self_judgment + self_kindness + common_humanity + -->
+<!--   isolation + over_identification + mindfulness -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- summary(self_compassion) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- summary(pos_self_compassion) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- summary(neg_self_compassion) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- summary(avoiding_strategies) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- df$gender <- fct_recode( -->
+<!--   df$gender, -->
+<!--   "female" = "Femmina", -->
+<!--   "male" = "Maschio" -->
+<!-- ) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- df$employment <- fct_recode( -->
+<!--   df$employment, -->
+<!--   "Dipendente" = "Operaio", -->
+<!--   "Dipendente" = "Impiegato", -->
+<!--   "Libero professionista" = "Imprenditore", -->
+<!--   "Dipendente" = "Dipendente CRI", -->
+<!--   "Dipendente" = "Infermiere", -->
+<!--   "Dipendente" = "Militare", -->
+<!--   "Dipendente" = "Vigile del Fuoco", -->
+<!--   "Pensionato" = "pensionato", -->
+<!--   "Dipendente" = "Funzionario Pubblico", -->
+<!--   "Dipendente" = "Forze dell'Ordine", -->
+<!--   "Dipendente" = "Ricercatore", -->
+<!--   "Libero professionista" = "Commerciante", -->
+<!--   "Dipendente" = "Educatore", -->
+<!--   "Dipendente" = "Soccorritore", -->
+<!--   "Dipendente" = "Polizia locale", -->
+<!--   "Dipendente" = "Polizia Locale", -->
+<!--   "Studente" = "Dottoranda", -->
+<!--   "Dipendente" = "Medico", -->
+<!--   "Pensionato" = "Pensione", -->
+<!--   "Dipendente" = "Insegnante" -->
+<!-- ) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- df$is_rescue_worker <- fct_recode( -->
+<!--   df$is_rescue_worker, -->
+<!--   "Yes" = "Sì", -->
+<!--   "Yes" = "Si" -->
+<!-- ) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- df <- df %>% -->
+<!--   dplyr::rename( -->
+<!--     years_experience = `Anni di esperienza TSSA/PTSI (inserire il numero)` -->
+<!--   ) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- df$last_training <- factor( -->
+<!--   df$last_training, -->
+<!--   levels = c( -->
+<!--     "Più di 1 anno fa", "Meno di 1 anno fa", "Più di 6 mesi fa", "Meno di 6 mesi fa", -->
+<!--     "Più di 2 mesi fa", "Meno di 2 mesi fa" -->
+<!--   ) -->
+<!-- ) -->
+<!-- unique(df$last_training) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- df$rate_of_activity <- factor( -->
+<!--   df$rate_of_activity, -->
+<!--   levels = c( -->
+<!--     "1 turno al mese", "Meno di 1 turno al mese", "1 turno ogni due settimane", -->
+<!--     "1 turno a settimana", "Più di 1 turno a settimana" -->
+<!--   ) -->
+<!-- ) -->
+<!-- unique(df$rate_of_activity) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- unique(df$job_qualification) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- df$is_job_qualification_invariant <- fct_recode( -->
+<!--   df$is_job_qualification_invariant, -->
+<!--   "Yes" = "Sì", -->
+<!--   "Yes" = "Si" -->
+<!-- ) -->
+<!-- table(df$is_job_qualification_invariant) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- df$is_team_invariant <- fct_recode( -->
+<!--   df$is_team_invariant, -->
+<!--   "Yes" = "Sì", -->
+<!--   "Yes" = "Si" -->
+<!-- ) -->
+<!-- table(df$is_team_invariant) -->
+<!-- ``` -->
+
+
+<!-- # Data frame finale -->
+
+<!-- ```{r} -->
+<!-- thedat1 <- data.frame( -->
+<!--   where = factor(df$where), -->
+<!--   id = factor(df$id), -->
+<!--   gender = factor(df$gender), -->
+<!--   age = df$age, -->
+<!--   education = factor(df$education), -->
+<!--   employment = factor(df$employment), -->
+<!--   is_rescue_worker = factor(df$is_rescue_worker), -->
+<!--   red_cross_commeetee_location = factor(df$red_cross_commeetee_location), -->
+<!--   rescue_worker_qualification = factor(df$rescue_worker_qualification), -->
+<!--   years_experience = factor(df$years_experience), -->
+<!--   last_training = factor(df$last_training), -->
+<!--   rate_of_activity = factor(df$rate_of_activity), -->
+<!--   job_qualification = factor(df$job_qualification), -->
+<!--   is_job_qualification_invariant = factor(df$is_job_qualification_invariant), -->
+<!--   is_team_invariant = factor(df$is_team_invariant), -->
+<!--   neuroticism, -->
+<!--   extraversion, -->
+<!--   openness, -->
+<!--   agreeableness, -->
+<!--   conscientiousness, -->
+<!--   coping, -->
+<!--   ptg, -->
+<!--   ies = ies_r_score, -->
+<!--   neg_self_compassion, -->
+<!--   pos_self_compassion, -->
+<!--   family, -->
+<!--   friends, -->
+<!--   significant_other -->
+<!-- ) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- thedat <- thedat1 %>% -->
+<!--   dplyr::filter(is_rescue_worker == "Yes") -->
+
+<!-- # thedat <- thedat2[complete.cases(thedat2), ] -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- saveRDS(thedat, file = "rescue_worker.Rds") -->
+
+<!-- write.table( -->
+<!--   thedat, -->
+<!--   file = "rescue_worker.csv", -->
+<!--   sep = ";", -->
+<!--   row.names = FALSE -->
+<!-- ) -->
+<!-- ``` -->
+
+

@@ -1,0 +1,1261 @@
+---
+title: "Self-compassion, post-traumatic growth, and PTSD"
+author: "[Corrado Caudek](https://ccaudek.github.io/)"
+date: "Last modified `r format(Sys.time(), '%Y-%m-%d')`"
+fontsize: 11pt
+output:
+  prettydoc::html_pretty:
+    theme: hpstr
+    highlight: github
+---
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  strip.white = TRUE
+)
+
+suppressPackageStartupMessages(library("here"))
+suppressPackageStartupMessages(library("lavaan"))
+suppressPackageStartupMessages(library("brms"))
+suppressPackageStartupMessages(library("tidyverse"))
+library("ggthemes")
+suppressPackageStartupMessages(library("viridis"))
+library("tidyr")
+suppressPackageStartupMessages(library("mice"))
+suppressPackageStartupMessages(library("corrplot"))
+suppressPackageStartupMessages(library("bayesplot"))
+suppressPackageStartupMessages(library("semPlot"))
+suppressPackageStartupMessages(library("rio"))
+suppressPackageStartupMessages(library("outForest"))
+suppressPackageStartupMessages(library("semTools"))
+suppressPackageStartupMessages(library("semoutput"))
+suppressPackageStartupMessages(library("isotree"))
+suppressPackageStartupMessages(library("tidySEM"))
+suppressPackageStartupMessages(library("stringr"))
+suppressPackageStartupMessages(library("papaja"))
+
+options(max.print = 99999999)
+
+source(here("libraries", "self_compassion_fnc.R"))
+```
+
+
+# Motivation
+
+Self-compassion (SC) has been proposed as a protective factor against PTSD and a factor promoting PTG.
+
+One limit of these studies, however, is that they have often been performed in student populations, that is, in samples in which, supposedly, PTSD and PTG are only present in mild forms, if ever.
+
+Moreover, in recent years, the role of SC has been questioned. For example, Muris, Otgaar and Pfattheicher (2019) maintain that SC is strongly associated with (reversed) Negative Affect and that, once the negative component of SC is removed, the added value of positive SC is marginal.
+
+Furthermore, Geiger, Pfattheicher, Hartung, Weiss, Schindler, and Wilhelm (2018) have  questioned the fact that SC is a construct that does not overlap with Neuroticism. Once Neuroticism is controlled, there is no evidence of a specific contribution of SC.
+
+The purpose of the present study is to evaluate the hypotheses of Muris et al. (2019) and of Geiger et al. (2018) in a sample of rescue workers.
+
+
+# Prelims 
+
+```{r}
+temp <- readRDS(here("data", "processed", "rescue_workers_cleaned_data.rds"))
+clean_dat <- temp %>% 
+  dplyr::filter(age_imp > 20)
+```
+
+
+```{r, echo=FALSE}
+# Save subjects ids
+subjects <- data.frame(id = clean_dat$id)
+saveRDS(subjects, here("data", "processed", "participants.Rds"))
+```
+
+
+```{r}
+psych::describe(clean_dat)
+```
+
+
+Because of kurtosis for a sub-scale of PTG, robust estimation procedure with the Satorra-Bentler corrections were used. 
+
+
+# Model 0 
+
+M0 considers two endogenous variables: post-traumatic growth (ptgr) and post-traumatic stress (ptss) and their relations with 4 exogenous variables: coping (cope), perceived social support (soc), self-compassion (sc), and neuroticism (neuro). In model M0, only the regression effects of cope and soc are considered. M0 is therefore a baseline model.
+
+I have included the other exogenous variables, also without considering their effects on the endogenous variables, in order to be able to compare different nested models, to test several theoretical questions.
+
+
+```{r}
+model0 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+          personal_strength + spirituality_changes + 
+          interpersonal_relationships
+  
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ social_support + avoiding_strategies + 
+          positive_attitude + problem_orientation + 
+          transcendent_orientation
+  
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  sc =~ self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  # regressions
+  ptgr ~ cope + soc  
+  ptss ~ cope + soc 
+
+  self_judgment ~~ self_kindness
+  "
+```
+
+
+
+```{r}
+fit0 <- lavaan::sem(
+  model0,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+
+```{r, echo=FALSE}
+fitMeasures(
+  fit0, 
+  c("chisq", "df", "cfi", "cfi.robust", "nfi", "tli", "tli.robust", 
+    "rmsea", "srmr")
+)
+```
+
+
+```{r}
+lavaan::standardizedSolution(fit0) %>% 
+  mutate_if("is.numeric","round",3) %>% 
+  filter(op == "=~")
+```
+
+
+# Model 1 
+
+M1 considers, beyond the regression effects of M0, also an effect of self-compassion, but without distinguishing the two components of self-compassion.
+Modification indices suggest to add a residual correlation between self_judgment and self_kindness.
+
+```{r}
+model1 <- "
+  # measurement model
+  
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+          personal_strength + spirituality_changes + 
+          interpersonal_relationships
+  
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ social_support + avoiding_strategies + 
+          positive_attitude + problem_orientation + 
+          transcendent_orientation
+  
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  sc =~ self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  # regressions
+  ptgr ~ cope + soc + sc 
+  ptss ~ cope + soc + sc 
+
+  self_judgment ~~ self_kindness
+  "
+```
+
+
+```{r}
+fit1 <- lavaan::sem(
+  model1,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+```{r}
+anova(fit1, fit0)
+```
+
+Model M1 improves the fit respect model M0. But the fit of M1 is still inadequate.
+
+
+```{r, echo=FALSE}
+fitMeasures(
+  fit1, 
+  c("cfi", "cfi.robust", "tli", "tli.robust", "rmsea", "srmr")
+)
+```
+
+
+```{r, eval=FALSE, echo=FALSE}
+semPaths(
+  fit1, 
+  "std",
+  edge.label.cex = 0.75, 
+  curvePivot = TRUE, 
+  title = TRUE,
+  fade = FALSE
+)
+```
+
+
+# Model 1a 
+
+M1a is an attempt of improving the fit of M1 by considering only a subset of dimensions of coping, because Coping was poorly defined by such indicators.
+
+```{r}
+model1a <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+   
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  sc =~ self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  sc ~~ neuro
+  soc ~~ cope
+  soc ~~ sc
+  soc ~~ neuro
+  cope ~~ sc
+  cope ~~ neuro
+  
+  # regressions
+  ptgr ~ cope + soc + sc 
+  ptss ~ cope + soc + sc 
+  
+  self_judgment ~~ self_kindness
+"
+```
+
+
+```{r}
+fit1a <- lavaan::sem(
+  model1a,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+
+```{r, echo=FALSE}
+fitMeasures(
+  fit1a, 
+  c("cfi", "cfi.robust", "tli", "tli.robust", "rmsea", "srmr")
+)
+```
+
+
+```{r}
+anova(fit1, fit1a)
+```
+
+
+# Model 2 
+
+M2 distinguishes between the two components of self-compassion.
+
+```{r}
+model2 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+   # + transcendent_orientation + avoiding_strategies + social_support 
+  
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  psc ~~ nsc
+  psc ~~ neuro
+  nsc ~~ neuro
+  soc ~~ cope
+  soc ~~ nsc
+  soc ~~ psc
+  soc ~~ neuro
+  cope ~~ nsc
+  cope ~~ psc
+  cope ~~ neuro
+  
+  # regressions
+  ptgr ~ cope + soc + nsc + psc 
+  ptss ~ cope + soc + nsc + psc 
+
+  self_judgment ~~ self_kindness
+"
+```
+
+
+```{r}
+fit2 <- sem(
+  model2,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+
+```{r, echo=FALSE}
+fitMeasures(
+  fit2, 
+  c("cfi", "cfi.robust", "tli", "tli.robust", "rmsea", "srmr")
+)
+```
+
+The fit improves.
+
+```{r}
+anova(fit1a, fit2)
+```
+
+```{r}
+compareFit(fit2, fit1a, nested = TRUE)
+```
+
+
+# Model 6 
+
+Model M6 adds the regression coefficient for Neuroticism.
+
+```{r}
+model6 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  psc =~ self_kindness + common_humanity + mindfulness
+  nsc =~ self_judgment + isolation + over_identification
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptss ~ cope + soc + nsc + psc + neuro
+  ptgr ~ cope + soc + nsc + psc + neuro
+  
+  # covariances
+  self_judgment ~~ self_kindness
+"
+```
+
+
+```{r}
+fit6 <- sem(
+  model6,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+
+```{r}
+anova(fit2, fit6)
+```
+
+The fit improves and is very good.
+
+```{r, echo=FALSE}
+fitMeasures(
+  fit6, 
+  c("cfi", "cfi.robust", "tli", "tli.robust", "rmsea", "srmr")
+)
+```
+
+```{r}
+summary(
+  fit6,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+
+
+```{r}
+semPaths(
+  fit6, 
+  "std",
+  edge.label.cex = 0.75, 
+  curvePivot = TRUE, 
+  title = TRUE,
+  fade = FALSE
+)
+```
+
+
+
+```{r}
+lavaan::standardizedSolution(fit6) %>% 
+  dplyr::filter(!is.na(pvalue)) %>% 
+  arrange(desc(pvalue)) %>% 
+  mutate_if("is.numeric","round",3) %>% 
+  select(-ci.lower,-ci.upper,-z)
+
+pvalue_cutoff <- 0.05
+
+obj <- semPlot:::semPlotModel(fit6)
+
+# save a copy of the original, so we can compare it later and 
+#  be sure we removed only what we intended to remove
+original_Pars <- obj@Pars
+
+check_Pars <- obj@Pars %>% 
+  dplyr::filter(!(edge %in% c("int","<->") | lhs == rhs)) 
+# this is the list of paramater to sift thru
+
+keep_Pars <- obj@Pars %>% 
+  dplyr::filter(edge %in% c("int","<->") | lhs == rhs) 
+# this is the list of paramater to keep asis
+
+test_against <- lavaan::standardizedSolution(fit6) %>% 
+  dplyr::filter(
+    pvalue < pvalue_cutoff, rhs != lhs)
+
+test_against_rev <- test_against %>% 
+  rename(rhs2 = lhs,
+         lhs = rhs) %>% 
+  rename(rhs = rhs2)
+# for some reason, the rhs and lhs are reversed in the 
+# standardizedSolution() output, for some of the values
+
+checked_Pars <-
+    check_Pars %>% 
+  semi_join(test_against, by = c("lhs", "rhs")) %>% 
+  bind_rows(
+        check_Pars %>% 
+          semi_join(test_against_rev, by = c("lhs", "rhs"))
+    )
+
+# I'll have to reverse it myself, and test against both orders
+obj@Pars <- keep_Pars %>% 
+  bind_rows(checked_Pars)
+
+#let's verify by looking at the list of the edges we removed from the object
+anti_join(original_Pars, obj@Pars)
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+semPaths(
+  obj, 
+  "col",
+  "std", 
+  rotation = 1,
+  groups = "latents", 
+  pastel = TRUE,
+  residuals = FALSE,
+  structural = TRUE,
+  curvature = 5,
+  edge.width = 2,
+edge.label.cex = 1.3,
+  mar = c(4, 1, 14, 1)
+)
+```
+
+
+```{r, eval=FALSE, echo=FALSE}
+semPaths(
+  fit6, 
+  "col",
+  "std", 
+  rotation = 1,
+  groups = "latents", 
+  pastel = TRUE,
+  residuals = FALSE,
+  structural = TRUE,
+  curvature = 5,
+  edge.width = 2,
+  mar = c(3, 1, 12, 1)
+)
+```
+
+```{r}
+standardizedSolution(fit6) %>% 
+  dplyr::filter(op == "~" & (lhs == "ptss" | lhs == "ptgr")) %>% 
+  select(lhs, rhs, est.std, pvalue)
+```
+
+
+```{r, eval=FALSE, echo=FALSE}
+# vlabs <- c(" x1 " = " Vis 1" , " x2 " = " Vis 2" , x3 = " Vis 3" , x4 = " Txt
+# 1" , x5 = " Txt 2" , x6 = " Txt 3" , x7 = " Speed 1" , x8 = " Speed 2" ,
+# x9 = " Speed 3")
+# 
+# fit1.t3 <- semTable (
+#   fit6, 
+#   columns = c(" est " , " se " , "p") , 
+#   paramSets = c(" loadings ") , 
+#   fits = c(" chisq " , " rmsea ") , 
+#   file = file.path ( tempdir , " fit1.t3 ") , 
+#   varLabels = vlabs , 
+#   longtable = FALSE , 
+#   table.float = TRUE , 
+#   caption = " Table Floated ( not a longtable )" , 
+#   label = "tab : fit1.t3 ")
+```
+
+
+```{r}
+graph_sem(model = fit10)
+```
+
+
+# Model 7 
+
+Model 7 remove the two self-compassion regression effects from M6.
+
+```{r}
+model7 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptss
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+  
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # regressions
+  ptgr ~ cope + soc + neuro
+  ptss ~ cope + soc + neuro
+  
+# covariances
+  self_judgment ~~ self_kindness
+"
+```
+
+
+```{r}
+fit7 <- sem(
+  model7,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+
+```{r}
+anova(fit6, fit7)
+```
+
+M6 provides a better fit.
+
+```{r, echo=FALSE}
+fitMeasures(
+  fit7, 
+  c("cfi", "cfi.robust", "tli", "tli.robust", "rmsea", "srmr")
+)
+```
+
+
+# Model 8 
+
+M8 remove only the regression effect of the negative component of self-compassion from M6.
+
+```{r}
+model8 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ cope + soc + psc + neuro
+  ptss ~ cope + soc + psc + neuro
+  
+  # covariances
+  self_judgment ~~ self_kindness
+"
+```
+
+```{r}
+fit8 <- sem(
+  model8,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+The goodness of fit decreases.
+
+```{r}
+anova(fit6, fit8)
+```
+
+
+```{r, echo=FALSE}
+fitMeasures(
+  fit8, 
+  c("cfi", "cfi.robust", "tli", "tli.robust", "rmsea", "srmr")
+)
+```
+
+
+# Model 9 
+
+M9 removes only the positive component of self-compassion from M6.
+
+```{r}
+model9 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ cope + soc + nsc + neuro
+  ptss ~ cope + soc + nsc + neuro
+  
+  # covariances
+  self_judgment ~~ self_kindness
+"
+```
+
+
+```{r}
+fit9 <- sem(
+  model9,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+The goodness of fit decreases.
+
+```{r}
+anova(fit6, fit9)
+```
+
+
+# Model 10
+
+M10: a mediation structure with the two components of self-compassion
+
+```{r}
+model10 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ dg_cope*cope + dg_soc*soc + dg_neuro*neuro
+  ptss ~ ds_cope*cope + ds_soc*soc + ds_neuro*neuro
+
+  nsc ~ nsc_cope*cope + nsc_soc*soc + nsc_neuro*neuro
+  psc ~ psc_cope*cope + psc_soc*soc + psc_neuro*neuro
+  
+  ptgr ~ ig_nsc*nsc + ig_psc*psc 
+  ptss ~ is_nsc*nsc + is_psc*psc
+  
+  # covariances
+  self_judgment ~~ self_kindness
+  
+  # indirect and total effects
+  # cope
+  i_cope_s := nsc_cope * is_nsc + psc_cope * is_psc
+  i_cope_g := nsc_cope * ig_nsc + psc_cope * ig_psc
+  tot_cope_s := i_cope_s + ds_cope
+  tot_cope_g := i_cope_g + dg_cope
+  tot_cope := i_cope_s + i_cope_g
+
+  # soc
+  i_soc_s := nsc_soc * is_nsc + psc_soc * is_psc
+  i_soc_g := nsc_soc * ig_nsc + psc_soc * ig_psc
+  tot_soc_s := i_soc_s + ds_soc
+  tot_soc_g := i_soc_g + dg_soc
+  tot_soc := i_soc_s + i_soc_g
+  
+  # neuro
+  i_neuro_s := nsc_neuro * is_nsc + psc_neuro * is_psc
+  i_neuro_g := nsc_neuro * ig_nsc + psc_neuro * ig_psc
+  tot_neuro_s := i_neuro_s + ds_neuro
+  tot_neuro_g := i_neuro_g + dg_neuro
+  tot_neuro := i_neuro_s + i_neuro_g
+"
+```
+
+
+```{r}
+fit10 <- sem(
+  model10,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+```{r}
+fit10_boot <- sem(
+  model10,
+  data = clean_dat,
+  estimator = "ML",
+  std.lv = TRUE,
+  se = "bootstrap", 
+  bootstrap = 10000
+)
+```
+
+
+
+```{r}
+parameterestimates(
+  fit10_boot, 
+  boot.ci.type = "bca.simple", 
+  standardized = TRUE) 
+```
+
+```{r}
+boot_mediation <- parameterEstimates(
+  fit10_boot, se = TRUE, zstat = TRUE, pvalue = TRUE, 
+                    ci = TRUE, level = 0.95, boot.ci.type = "perc", 
+                    standardized = TRUE, remove.system.eq = TRUE,
+                    remove.eq = TRUE, remove.ineq = TRUE, remove.def = FALSE, 
+                    rsquare = TRUE
+  ) %>% 
+  dplyr::filter(op == ":=")
+boot_mediation
+saveRDS(boot_mediation, "boot_mediation.Rds")
+```
+
+```{r}
+boot_mediation <- readRDS("boot_mediation.Rds")
+```
+
+```{r}
+foo <- boot_mediation[-c(5, 10, 15), c(1, 5, 6, 9:10)] 
+
+now_names <- c(
+   "Ind. eff. coping -> PTSS", 
+   "Ind. eff. coping -> PTG", 
+   "Tot. eff. coping -> PTSS", 
+   "Tot. eff. coping -> PTG", 
+   "Ind. eff. soc. supp. -> PTSS",   
+   "Ind. eff. soc. supp. -> PTG", 
+   "Tot. eff. soc. supp. -> PTSS", 
+   "Tot. eff. soc. supp. -> PTG", 
+   "Ind. eff. neuro. -> PTSS", 
+   "Ind. eff. neuro. -> PTG",  
+   "Tot. eff. neuro. -> PTSS", 
+   "Tot. eff. neuro. -> PTG"
+)
+
+foo$lhs <- now_names
+
+foo %>% 
+  knitr::kable(
+    col.names = c("Effect", "Estimate", "S.E.", "C.I. lower", "C.I. upper"),
+    digits = 3,
+    row.names = FALSE
+  )
+```
+
+
+
+```{r}
+summary(
+  fit10,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+
+```{r}
+lavaan::standardizedSolution(fit10) %>% 
+  dplyr::filter(!is.na(pvalue)) %>% 
+  arrange(desc(pvalue)) %>% 
+  mutate_if("is.numeric","round",3) %>% 
+  select(-ci.lower,-ci.upper,-z)
+
+pvalue_cutoff <- 0.05
+
+obj <- semPlot:::semPlotModel(fit10)
+
+# save a copy of the original, so we can compare it later and 
+#  be sure we removed only what we intended to remove
+original_Pars <- obj@Pars
+
+check_Pars <- obj@Pars %>% 
+  dplyr::filter(!(edge %in% c("int","<->") | lhs == rhs)) 
+# this is the list of paramater to sift thru
+
+keep_Pars <- obj@Pars %>% 
+  dplyr::filter(edge %in% c("int","<->") | lhs == rhs) 
+# this is the list of paramater to keep asis
+
+test_against <- lavaan::standardizedSolution(fit10) %>% 
+  dplyr::filter(
+    pvalue < pvalue_cutoff, rhs != lhs)
+
+test_against_rev <- test_against %>% 
+  rename(rhs2 = lhs,
+         lhs = rhs) %>% 
+  rename(rhs = rhs2)
+# for some reason, the rhs and lhs are reversed in the 
+# standardizedSolution() output, for some of the values
+
+checked_Pars <-
+    check_Pars %>% 
+  semi_join(test_against, by = c("lhs", "rhs")) %>% 
+  bind_rows(
+        check_Pars %>% 
+          semi_join(test_against_rev, by = c("lhs", "rhs"))
+    )
+
+# I'll have to reverse it myself, and test against both orders
+obj@Pars <- keep_Pars %>% 
+  bind_rows(checked_Pars)
+
+#let's verify by looking at the list of the edges we removed from the object
+anti_join(original_Pars, obj@Pars)
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+semPaths(
+  obj, 
+  "col",
+  "std", 
+  rotation = 1,
+  groups = "latents", 
+  pastel = TRUE,
+  residuals = FALSE,
+  structural = TRUE,
+  curvature = 5,
+  edge.width = 2,
+edge.label.cex = 1.3,
+  mar = c(4, 1, 14, 1)
+)
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+semPaths(
+  obj, 
+  "col",
+  "std", 
+  rotation = 1,
+  groups = "latents", 
+  pastel = TRUE,
+  residuals = FALSE,
+  structural = TRUE,
+  curvature = 5,
+  edge.width = 2,
+  edge.label.cex = 1.3,
+  mar = c(4, 1, 14, 1)
+)
+```
+
+```{r}
+std_solution <- lavaan::standardizedSolution(fit10) %>% 
+  mutate_if("is.numeric","round",3) %>% 
+  filter(op == "~" | op == "~~")
+```
+
+
+```{r}
+lay <- get_layout(
+  "cope", "soc",  "neuro",
+  "nsc", "", "psc",
+  "ptss", "", "ptgr", 
+  rows = 3)
+lay
+```
+
+```{r}
+graph_sem(fit10, layout = lay)
+```
+
+```{r}
+graph_data <- prepare_graph(model = fit10, layout = lay)
+tidySEM::nodes(graph_data)
+```
+
+```{r}
+graph_data[[1]]$label[c(2, 7, 9, 10, 12, 14, 15, 24:27)] <- 
+  std_solution[c(2, 7, 9, 10, 12, 14, 15, 24:27), 4]
+```
+
+
+```{r}
+tidySEM::edges(graph_data)
+```
+
+```{r}
+tidySEM::nodes(graph_data) <- tidySEM::nodes(graph_data) %>%
+  mutate(label = str_to_title(label))
+```
+
+```{r}
+tidySEM::edges(graph_data) %>%
+  mutate(connect_from = replace(connect_from, is.na(curvature), "bottom")) %>%
+  mutate(connect_to = replace(connect_to, is.na(curvature), "top")) -> tidySEM::edges(graph_data)
+```
+
+```{r}
+plot(graph_data)
+```
+
+```{r}
+graph_sem(model = fit10, layout = lay, angle = 90)
+```
+
+```{r}
+edges(graph_data)
+plot(graph_data)
+```
+
+```{r}
+chars <- "test"
+value <- "es"
+str_detect(chars, value)
+```
+
+
+```{r}
+lay <- get_layout(
+  "", "cope", "soc",  "neuro", "",
+  "nsc", "", "", "", "psc",
+  "", "ptss", "", "ptgr", "",
+  rows = 3)
+
+graph_data <- prepare_graph(model = fit10, layout = lay)
+foo <- edges(graph_data) 
+foo1 <- foo[c(2, 7, 9:10, 12, 14, 15, 25:27), ]
+
+graph_data$edges <- foo1
+
+
+plot(graph_data)
+```
+
+
+
+
+
+
+
+
+# Mediation model without distinguishing between positive and negative components of self-compassion.
+
+
+M10 hypothesizes a mediation structure
+
+```{r}
+model11 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  sc =~ self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ dg_cope*cope + dg_soc*soc + dg_neuro*neuro
+  ptss ~ ds_cope*cope + ds_soc*soc + ds_neuro*neuro
+
+  sc ~ sc_cope*cope + sc_soc*soc + sc_neuro*neuro
+
+  ptgr ~ ig_nsc*sc  
+  ptss ~ is_nsc*sc 
+  
+  # covariances
+  self_judgment ~~ self_kindness
+"
+```
+
+
+```{r}
+fit11 <- sem(
+  model11,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+
+```{r}
+summary(
+  fit11,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+
+```{r}
+anova(fit11, fit10)
+```
+
+# Mediation model with 2 components of SC and neuroticism as mediators
+
+```{r}
+model12 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ dg_cope*cope + dg_soc*soc 
+  ptss ~ ds_cope*cope + ds_soc*soc 
+
+  nsc ~ nsc_cope*cope + nsc_soc*soc 
+  psc ~ psc_cope*cope + psc_soc*soc 
+  neuro ~ n_cope*cope + n_soc*soc
+  
+  ptgr ~ ig_nsc*nsc + ig_psc*psc + ig_neuro*neuro
+  ptss ~ is_nsc*nsc + is_psc*psc + is_neuro*neuro
+  
+  # covariances
+  self_judgment ~~ self_kindness
+"
+```
+
+
+```{r}
+fit12 <- sem(
+  model12,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE,
+  optim.dx.tol = TRUE
+)
+```
+
+```{r}
+summary(
+  fit12,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+
+```{r}
+anova(fit12, fit10)
+```
+
+mi <- modindices(fit12)
+mi[mi$op == "=~",]
+
+
+
+
+
+
+
+```{r}
+d <- clean_dat %>% dplyr::select(where(is.numeric))
+R <- cor(d)
+```
+
+
+```{r}
+
+fit10a <- sem(
+  model10,
+  sample.cov = R,
+  sample.nobs = 731,
+  std.lv = TRUE
+)
+```
+
+```{r}
+lay <- get_layout(
+  "", "cope", "soc",  "neuro", "",
+  "nsc", "", "", "", "psc",
+  "", "ptss", "", "ptgr", "",
+  rows = 3)
+
+graph_data <- prepare_graph(model = fit10a, layout = lay)
+plot(graph_data)
+```
+
+
+
+
+
+
+
+```{r}
+edges(graph_data) %>%
+  mutate(colour = "black") %>%
+  mutate(colour = replace(colour, from == "visual" & to == "x2", "red")) %>%
+  mutate(linetype = 1) %>%
+  mutate(linetype = replace(linetype, from == "visual" & to == "x2", 2)) %>%
+  mutate(alpha = 1) %>%
+  mutate(alpha = replace(alpha, from == "visual" & to == "x2", .5)) -> edges(graph_data)
+
+```
+

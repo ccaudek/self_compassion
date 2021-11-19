@@ -1,0 +1,820 @@
+VERSION 1.1.0
+INPUT
+TITLE:
+ Two-Bifactor ESEM MLR.
+
+DATA:
+  FILE IS selfcompassionitems.dat;
+VARIABLE:
+  NAMES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22
+            scsk23 scoi24 scis25 scsk26;
+  MISSING ARE ALL(-9);
+  USEVARIABLES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22
+            scsk23 scoi24 scis25 scsk26;
+ANALYSIS:
+  ESTIMATOR = MLR;
+  ROTATION = target (orthogonal);
+OUTPUT:
+ stdyx;
+MODEL:
+  sk BY scsk5 scsk12 scsk19 scsk23 scsk26 scsj1~0 scsj8~0 scsj11~0
+        scsj16~0 scsj21~0 scch3~0 scch7~0 scch10~0 scch15~0 scis4~0
+        scis13~0 scis18~0 scis25~0 scmi9~0 scmi14~0 scmi17~0 scmi22~0
+        scoi2~0 scoi6~0 scoi20~0 scoi24~0 (*1);
+  sj BY scsk5~0 scsk12~0 scsk19~0 scsk23~0 scsk26~0 scsj1 scsj8 scsj11
+        scsj16 scsj21 scch3~0 scch7~0 scch10~0 scch15~0 scis4~0 scis13~0
+        scis18~0 scis25~0 scmi9~0 scmi14~0 scmi17~0 scmi22~0 scoi2~0
+        scoi6~0 scoi20~0 scoi24~0 (*1);
+  ch BY scsk5~0 scsk12~0 scsk19~0 scsk23~0 scsk26~0 scsj1~0 scsj8~0
+        scsj11~0 scsj16~0 scsj21~0 scch3 scch7 scch10 scch15 scis4~0
+        scis13~0 scis18~0 scis25~0 scmi9~0 scmi14~0 scmi17~0 scmi22~0
+        scoi2~0 scoi6~0 scoi20~0 scoi24~0 (*1);
+  is BY scsk5~0 scsk12~0 scsk19~0 scsk23~0 scsk26~0 scsj1~0 scsj8~0 scsj11~0
+        scsj16~0 scsj21~0 scch3~0 scch7~0 scch10~0 scch15~0 scis4 scis13
+        scis18 scis25 scmi9~0 scmi14~0 scmi17~0 scmi22~0 scoi2~0 scoi6~0
+        scoi20~0 scoi24~0 (*1);
+  mi BY scsk5~0 scsk12~0 scsk19~0 scsk23~0 scsk26~0 scsj1~0 scsj8~0 scsj11~0
+        scsj16~0 scsj21~0 scch3~0 scch7~0 scch10~0 scch15~0 scis4~0 scis13~0
+        scis18~0 scis25~0 scmi9 scmi14 scmi17 scmi22 scoi2~0 scoi6~0 scoi20~0
+        scoi24~0 (*1);
+  oi BY scsk5~0 scsk12~0 scsk19~0 scsk23~0 scsk26~0 scsj1~0 scsj8~0 scsj11~0
+        scsj16~0 scsj21~0 scch3~0 scch7~0 scch10~0 scch15~0 scis4~0 scis13~0
+        scis18~0 scis25~0 scmi9~0 scmi14~0 scmi17~0 scmi22~0 scoi2 scoi6
+        scoi20 scoi24 (*1);
+  po BY scsk5* scsk12 scsk19 scsk23 scsk26 scch3 scch7 scch10 scch15 scmi9
+        scmi14 scmi17 scmi22;
+  ne BY scsj1* scsj8 scsj11 scsj16 scsj21 scis4 scis13 scis18 scis25 scoi2
+        scoi6 scoi20 scoi24;
+  po@1;
+  ne@1;
+  po WITH sk-oi@0;
+  ne WITH sk-oi@0;
+INPUT_END
+2
+2
+0
+2
+MLR
+1
+GENERAL
+0
+26
+8
+0
+scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 scsk23 scoi24 scis25 scsk26 sk sj ch is mi oi po ne
+1
+-1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 0 0 0 0 0 0 0 0
+0
+8
+sk
+scsk5 scsk12 scsk19 scsk23 scsk26 scsj1 scsj8 scsj11 scsj16 scsj21 scch3 scch7 scch10 scch15 scis4 scis13 scis18 scis25 scmi9 scmi14 scmi17 scmi22 scoi2 scoi6 scoi20 scoi24
+sj
+scsk5 scsk12 scsk19 scsk23 scsk26 scsj1 scsj8 scsj11 scsj16 scsj21 scch3 scch7 scch10 scch15 scis4 scis13 scis18 scis25 scmi9 scmi14 scmi17 scmi22 scoi2 scoi6 scoi20 scoi24
+ch
+scsk5 scsk12 scsk19 scsk23 scsk26 scsj1 scsj8 scsj11 scsj16 scsj21 scch3 scch7 scch10 scch15 scis4 scis13 scis18 scis25 scmi9 scmi14 scmi17 scmi22 scoi2 scoi6 scoi20 scoi24
+is
+scsk5 scsk12 scsk19 scsk23 scsk26 scsj1 scsj8 scsj11 scsj16 scsj21 scch3 scch7 scch10 scch15 scis4 scis13 scis18 scis25 scmi9 scmi14 scmi17 scmi22 scoi2 scoi6 scoi20 scoi24
+mi
+scsk5 scsk12 scsk19 scsk23 scsk26 scsj1 scsj8 scsj11 scsj16 scsj21 scch3 scch7 scch10 scch15 scis4 scis13 scis18 scis25 scmi9 scmi14 scmi17 scmi22 scoi2 scoi6 scoi20 scoi24
+oi
+scsk5 scsk12 scsk19 scsk23 scsk26 scsj1 scsj8 scsj11 scsj16 scsj21 scch3 scch7 scch10 scch15 scis4 scis13 scis18 scis25 scmi9 scmi14 scmi17 scmi22 scoi2 scoi6 scoi20 scoi24
+po
+scsk5 scsk12 scsk19 scsk23 scsk26 scch3 scch7 scch10 scch15 scmi9 scmi14 scmi17 scmi22
+ne
+scsj1 scsj8 scsj11 scsj16 scsj21 scis4 scis13 scis18 scis25 scoi2 scoi6 scoi20 scoi24
+1 1 sk scsk5 0.792 0.111
+1 1 sk scsk12 0.829 0.133
+1 1 sk scsk19 0.773 0.203
+1 1 sk scsk23 0.380 0.376
+1 1 sk scsk26 0.465 0.290
+1 1 sk scsj1 -0.040 0.092
+1 1 sk scsj8 -0.136 0.067
+1 1 sk scsj11 -0.134 0.116
+1 1 sk scsj16 -0.133 0.065
+1 1 sk scsj21 -0.142 0.057
+1 1 sk scch3 0.254 0.243
+1 1 sk scch7 0.364 0.197
+1 1 sk scch10 0.245 0.267
+1 1 sk scch15 0.339 0.217
+1 1 sk scis4 -0.113 0.078
+1 1 sk scis13 -0.099 0.062
+1 1 sk scis18 -0.053 0.088
+1 1 sk scis25 -0.074 0.067
+1 1 sk scmi9 0.087 0.177
+1 1 sk scmi14 0.013 0.215
+1 1 sk scmi17 0.175 0.243
+1 1 sk scmi22 0.441 0.240
+1 1 sk scoi2 -0.032 0.146
+1 1 sk scoi6 -0.054 0.091
+1 1 sk scoi20 0.185 0.063
+1 1 sk scoi24 0.069 0.080
+1 1 sj scsk5 0.049 0.052
+1 1 sj scsk12 -0.023 0.040
+1 1 sj scsk19 -0.088 0.054
+1 1 sj scsk23 -0.329 0.167
+1 1 sj scsk26 -0.241 0.105
+1 1 sj scsj1 0.522 0.128
+1 1 sj scsj8 0.942 0.170
+1 1 sj scsj11 0.724 0.149
+1 1 sj scsj16 0.819 0.136
+1 1 sj scsj21 0.566 0.113
+1 1 sj scch3 0.066 0.122
+1 1 sj scch7 0.162 0.072
+1 1 sj scch10 0.158 0.094
+1 1 sj scch15 -0.005 0.073
+1 1 sj scis4 0.340 0.200
+1 1 sj scis13 0.287 0.106
+1 1 sj scis18 0.379 0.119
+1 1 sj scis25 0.420 0.162
+1 1 sj scmi9 0.171 0.084
+1 1 sj scmi14 0.025 0.080
+1 1 sj scmi17 0.008 0.106
+1 1 sj scmi22 0.095 0.096
+1 1 sj scoi2 0.403 0.266
+1 1 sj scoi6 0.445 0.189
+1 1 sj scoi20 0.339 0.144
+1 1 sj scoi24 0.213 0.166
+1 1 ch scsk5 0.194 0.106
+1 1 ch scsk12 0.149 0.045
+1 1 ch scsk19 0.116 0.118
+1 1 ch scsk23 0.285 0.358
+1 1 ch scsk26 0.299 0.191
+1 1 ch scsj1 0.038 0.148
+1 1 ch scsj8 0.068 0.060
+1 1 ch scsj11 0.157 0.104
+1 1 ch scsj16 0.030 0.071
+1 1 ch scsj21 0.113 0.064
+1 1 ch scch3 0.397 0.577
+1 1 ch scch7 0.721 0.158
+1 1 ch scch10 0.964 0.271
+1 1 ch scch15 0.459 0.144
+1 1 ch scis4 0.040 0.111
+1 1 ch scis13 0.036 0.037
+1 1 ch scis18 0.095 0.092
+1 1 ch scis25 0.004 0.088
+1 1 ch scmi9 0.214 0.106
+1 1 ch scmi14 0.124 0.189
+1 1 ch scmi17 0.222 0.250
+1 1 ch scmi22 0.316 0.206
+1 1 ch scoi2 0.022 0.238
+1 1 ch scoi6 0.010 0.132
+1 1 ch scoi20 0.028 0.061
+1 1 ch scoi24 0.042 0.089
+1 1 is scsk5 0.052 0.045
+1 1 is scsk12 -0.136 0.044
+1 1 is scsk19 -0.077 0.064
+1 1 is scsk23 -0.163 0.132
+1 1 is scsk26 -0.021 0.087
+1 1 is scsj1 0.136 0.117
+1 1 is scsj8 0.349 0.092
+1 1 is scsj11 0.374 0.148
+1 1 is scsj16 0.440 0.093
+1 1 is scsj21 0.263 0.097
+1 1 is scch3 0.142 0.120
+1 1 is scch7 0.198 0.052
+1 1 is scch10 0.005 0.053
+1 1 is scch15 -0.091 0.087
+1 1 is scis4 0.727 0.246
+1 1 is scis13 1.061 0.093
+1 1 is scis18 1.018 0.071
+1 1 is scis25 0.748 0.187
+1 1 is scmi9 -0.020 0.093
+1 1 is scmi14 -0.182 0.103
+1 1 is scmi17 -0.266 0.119
+1 1 is scmi22 -0.281 0.089
+1 1 is scoi2 0.636 0.313
+1 1 is scoi6 0.674 0.231
+1 1 is scoi20 0.500 0.140
+1 1 is scoi24 0.476 0.197
+1 1 mi scsk5 0.107 0.188
+1 1 mi scsk12 0.093 0.219
+1 1 mi scsk19 0.113 0.238
+1 1 mi scsk23 -0.102 0.359
+1 1 mi scsk26 0.011 0.287
+1 1 mi scsj1 0.191 0.090
+1 1 mi scsj8 -0.020 0.150
+1 1 mi scsj11 0.067 0.128
+1 1 mi scsj16 -0.052 0.117
+1 1 mi scsj21 0.040 0.112
+1 1 mi scch3 0.636 0.316
+1 1 mi scch7 -0.020 0.351
+1 1 mi scch10 -0.011 0.487
+1 1 mi scch15 0.306 0.281
+1 1 mi scis4 -0.115 0.115
+1 1 mi scis13 -0.151 0.084
+1 1 mi scis18 -0.150 0.081
+1 1 mi scis25 -0.105 0.093
+1 1 mi scmi9 0.406 0.164
+1 1 mi scmi14 0.556 0.188
+1 1 mi scmi17 0.315 0.211
+1 1 mi scmi22 0.103 0.252
+1 1 mi scoi2 -0.071 0.140
+1 1 mi scoi6 -0.055 0.131
+1 1 mi scoi20 -0.345 0.089
+1 1 mi scoi24 -0.229 0.110
+1 1 oi scsk5 -0.088 0.150
+1 1 oi scsk12 -0.172 0.140
+1 1 oi scsk19 -0.175 0.119
+1 1 oi scsk23 0.379 0.196
+1 1 oi scsk26 0.304 0.120
+1 1 oi scsj1 -0.017 0.116
+1 1 oi scsj8 0.220 0.111
+1 1 oi scsj11 -0.177 0.109
+1 1 oi scsj16 -0.090 0.201
+1 1 oi scsj21 0.175 0.082
+1 1 oi scch3 0.286 0.328
+1 1 oi scch7 -0.025 0.215
+1 1 oi scch10 -0.202 0.196
+1 1 oi scch15 0.149 0.094
+1 1 oi scis4 0.080 0.148
+1 1 oi scis13 0.020 0.160
+1 1 oi scis18 0.034 0.193
+1 1 oi scis25 0.042 0.168
+1 1 oi scmi9 0.006 0.114
+1 1 oi scmi14 -0.078 0.143
+1 1 oi scmi17 0.024 0.089
+1 1 oi scmi22 0.159 0.180
+1 1 oi scoi2 0.077 0.210
+1 1 oi scoi6 0.017 0.166
+1 1 oi scoi20 0.075 0.286
+1 1 oi scoi24 0.039 0.201
+1 1 po scsk5 0.205 0.442
+1 1 po scsk12 0.341 0.422
+1 1 po scsk19 0.468 0.404
+1 1 po scsk23 0.587 0.253
+1 1 po scsk26 0.442 0.295
+1 1 po scch3 -0.162 0.369
+1 1 po scch7 -0.019 0.554
+1 1 po scch10 0.071 0.702
+1 1 po scch15 0.393 0.356
+1 1 po scmi9 0.405 0.186
+1 1 po scmi14 0.608 0.163
+1 1 po scmi17 0.571 0.186
+1 1 po scmi22 0.446 0.268
+1 1 ne scsj1 0.330 0.190
+1 1 ne scsj8 0.351 0.404
+1 1 ne scsj11 0.424 0.309
+1 1 ne scsj16 0.313 0.378
+1 1 ne scsj21 0.327 0.251
+1 1 ne scis4 0.680 0.336
+1 1 ne scis13 0.199 0.513
+1 1 ne scis18 0.160 0.521
+1 1 ne scis25 0.535 0.381
+1 1 ne scoi2 0.796 0.397
+1 1 ne scoi6 0.650 0.328
+1 1 ne scoi20 0.386 0.356
+1 1 ne scoi24 0.497 0.300
+2 1 po sk 0.000 0.000
+2 1 po sj 0.000 0.000
+2 1 po ch 0.000 0.000
+2 1 po is 0.000 0.000
+2 1 po mi 0.000 0.000
+2 1 po oi 0.000 0.000
+2 1 ne sk 0.000 0.000
+2 1 ne sj 0.000 0.000
+2 1 ne ch 0.000 0.000
+2 1 ne is 0.000 0.000
+2 1 ne mi 0.000 0.000
+2 1 ne oi 0.000 0.000
+2 1 ne po -0.430 0.214
+2 1 sj sk 0.000 0.000
+2 1 ch sk 0.000 0.000
+2 1 ch sj 0.000 0.000
+2 1 is sk 0.000 0.000
+2 1 is sj 0.000 0.000
+2 1 is ch 0.000 0.000
+2 1 mi sk 0.000 0.000
+2 1 mi sj 0.000 0.000
+2 1 mi ch 0.000 0.000
+2 1 mi is 0.000 0.000
+2 1 oi sk 0.000 0.000
+2 1 oi sj 0.000 0.000
+2 1 oi ch 0.000 0.000
+2 1 oi is 0.000 0.000
+2 1 oi mi 0.000 0.000
+4 1 scsj1 0.713 0.042
+4 1 scoi2 0.515 0.063
+4 1 scch3 0.415 0.394
+4 1 scis4 0.543 0.063
+4 1 scsk5 0.628 0.062
+4 1 scoi6 0.606 0.050
+4 1 scch7 0.830 0.202
+4 1 scsj8 0.478 0.179
+4 1 scmi9 0.671 0.049
+4 1 scch10 0.298 0.489
+4 1 scsj11 0.645 0.044
+4 1 scsk12 0.431 0.055
+4 1 scis13 0.496 0.113
+4 1 scmi14 0.316 0.058
+4 1 scch15 0.665 0.047
+4 1 scsj16 0.652 0.074
+4 1 scmi17 0.431 0.038
+4 1 scis18 0.389 0.106
+4 1 scsk19 0.406 0.046
+4 1 scoi20 0.721 0.050
+4 1 scsj21 0.801 0.049
+4 1 scmi22 0.656 0.060
+4 1 scsk23 0.391 0.089
+4 1 scoi24 0.693 0.051
+4 1 scis25 0.759 0.054
+4 1 scsk26 0.483 0.051
+5 1 sk 1.000 0.000
+5 1 sj 1.000 0.000
+5 1 ch 1.000 0.000
+5 1 is 1.000 0.000
+5 1 mi 1.000 0.000
+5 1 oi 1.000 0.000
+5 1 po 1.000 0.000
+5 1 ne 1.000 0.000
+11 1 sk scsk5 0.679 0.093
+11 1 sk scsk12 0.723 0.114
+11 1 sk scsk19 0.680 0.177
+11 1 sk scsk23 0.340 0.335
+11 1 sk scsk26 0.437 0.272
+11 1 sk scsj1 -0.038 0.086
+11 1 sk scsj8 -0.105 0.051
+11 1 sk scsj11 -0.107 0.093
+11 1 sk scsj16 -0.104 0.051
+11 1 sk scsj21 -0.122 0.049
+11 1 sk scch3 0.234 0.225
+11 1 sk scch7 0.292 0.158
+11 1 sk scch10 0.210 0.230
+11 1 sk scch15 0.301 0.192
+11 1 sk scis4 -0.087 0.060
+11 1 sk scis13 -0.074 0.047
+11 1 sk scis18 -0.041 0.069
+11 1 sk scis25 -0.055 0.050
+11 1 sk scmi9 0.084 0.170
+11 1 sk scmi14 0.013 0.210
+11 1 sk scmi17 0.174 0.242
+11 1 sk scmi22 0.391 0.212
+11 1 sk scoi2 -0.025 0.111
+11 1 sk scoi6 -0.041 0.070
+11 1 sk scoi20 0.157 0.053
+11 1 sk scoi24 0.061 0.071
+11 1 sj scsk5 0.042 0.045
+11 1 sj scsk12 -0.020 0.035
+11 1 sj scsk19 -0.077 0.047
+11 1 sj scsk23 -0.294 0.149
+11 1 sj scsk26 -0.226 0.099
+11 1 sj scsj1 0.486 0.118
+11 1 sj scsj8 0.726 0.130
+11 1 sj scsj11 0.578 0.117
+11 1 sj scsj16 0.639 0.105
+11 1 sj scsj21 0.485 0.096
+11 1 sj scch3 0.061 0.113
+11 1 sj scch7 0.130 0.057
+11 1 sj scch10 0.136 0.080
+11 1 sj scch15 -0.004 0.065
+11 1 sj scis4 0.262 0.153
+11 1 sj scis13 0.215 0.080
+11 1 sj scis18 0.297 0.093
+11 1 sj scis25 0.313 0.120
+11 1 sj scmi9 0.165 0.081
+11 1 sj scmi14 0.025 0.078
+11 1 sj scmi17 0.008 0.106
+11 1 sj scmi22 0.084 0.085
+11 1 sj scoi2 0.307 0.202
+11 1 sj scoi6 0.342 0.145
+11 1 sj scoi20 0.287 0.120
+11 1 sj scoi24 0.189 0.146
+11 1 ch scsk5 0.166 0.091
+11 1 ch scsk12 0.130 0.039
+11 1 ch scsk19 0.102 0.104
+11 1 ch scsk23 0.255 0.320
+11 1 ch scsk26 0.280 0.180
+11 1 ch scsj1 0.036 0.138
+11 1 ch scsj8 0.052 0.046
+11 1 ch scsj11 0.126 0.083
+11 1 ch scsj16 0.023 0.055
+11 1 ch scsj21 0.097 0.055
+11 1 ch scch3 0.367 0.532
+11 1 ch scch7 0.579 0.126
+11 1 ch scch10 0.827 0.231
+11 1 ch scch15 0.408 0.127
+11 1 ch scis4 0.030 0.085
+11 1 ch scis13 0.027 0.028
+11 1 ch scis18 0.074 0.072
+11 1 ch scis25 0.003 0.066
+11 1 ch scmi9 0.206 0.102
+11 1 ch scmi14 0.121 0.185
+11 1 ch scmi17 0.221 0.249
+11 1 ch scmi22 0.280 0.182
+11 1 ch scoi2 0.016 0.181
+11 1 ch scoi6 0.008 0.102
+11 1 ch scoi20 0.024 0.052
+11 1 ch scoi24 0.037 0.079
+11 1 is scsk5 0.044 0.039
+11 1 is scsk12 -0.118 0.038
+11 1 is scsk19 -0.068 0.056
+11 1 is scsk23 -0.146 0.118
+11 1 is scsk26 -0.020 0.081
+11 1 is scsj1 0.127 0.109
+11 1 is scsj8 0.269 0.071
+11 1 is scsj11 0.299 0.118
+11 1 is scsj16 0.343 0.072
+11 1 is scsj21 0.225 0.083
+11 1 is scch3 0.131 0.111
+11 1 is scch7 0.159 0.042
+11 1 is scch10 0.004 0.046
+11 1 is scch15 -0.080 0.077
+11 1 is scis4 0.560 0.188
+11 1 is scis13 0.796 0.068
+11 1 is scis18 0.798 0.052
+11 1 is scis25 0.558 0.138
+11 1 is scmi9 -0.020 0.090
+11 1 is scmi14 -0.178 0.100
+11 1 is scmi17 -0.265 0.119
+11 1 is scmi22 -0.249 0.079
+11 1 is scoi2 0.484 0.238
+11 1 is scoi6 0.519 0.177
+11 1 is scoi20 0.424 0.117
+11 1 is scoi24 0.422 0.173
+11 1 mi scsk5 0.092 0.161
+11 1 mi scsk12 0.081 0.191
+11 1 mi scsk19 0.100 0.209
+11 1 mi scsk23 -0.091 0.321
+11 1 mi scsk26 0.010 0.269
+11 1 mi scsj1 0.178 0.084
+11 1 mi scsj8 -0.015 0.116
+11 1 mi scsj11 0.053 0.102
+11 1 mi scsj16 -0.040 0.092
+11 1 mi scsj21 0.034 0.096
+11 1 mi scch3 0.587 0.292
+11 1 mi scch7 -0.016 0.282
+11 1 mi scch10 -0.010 0.418
+11 1 mi scch15 0.271 0.249
+11 1 mi scis4 -0.089 0.089
+11 1 mi scis13 -0.113 0.063
+11 1 mi scis18 -0.117 0.063
+11 1 mi scis25 -0.079 0.069
+11 1 mi scmi9 0.390 0.157
+11 1 mi scmi14 0.542 0.182
+11 1 mi scmi17 0.314 0.210
+11 1 mi scmi22 0.092 0.223
+11 1 mi scoi2 -0.054 0.107
+11 1 mi scoi6 -0.042 0.101
+11 1 mi scoi20 -0.292 0.075
+11 1 mi scoi24 -0.203 0.097
+11 1 oi scsk5 -0.076 0.128
+11 1 oi scsk12 -0.150 0.122
+11 1 oi scsk19 -0.154 0.104
+11 1 oi scsk23 0.339 0.175
+11 1 oi scsk26 0.285 0.112
+11 1 oi scsj1 -0.016 0.108
+11 1 oi scsj8 0.169 0.085
+11 1 oi scsj11 -0.142 0.087
+11 1 oi scsj16 -0.070 0.157
+11 1 oi scsj21 0.150 0.070
+11 1 oi scch3 0.264 0.303
+11 1 oi scch7 -0.020 0.172
+11 1 oi scch10 -0.173 0.168
+11 1 oi scch15 0.132 0.084
+11 1 oi scis4 0.062 0.114
+11 1 oi scis13 0.015 0.120
+11 1 oi scis18 0.026 0.151
+11 1 oi scis25 0.031 0.125
+11 1 oi scmi9 0.006 0.110
+11 1 oi scmi14 -0.076 0.140
+11 1 oi scmi17 0.024 0.088
+11 1 oi scmi22 0.141 0.159
+11 1 oi scoi2 0.059 0.160
+11 1 oi scoi6 0.013 0.128
+11 1 oi scoi20 0.064 0.242
+11 1 oi scoi24 0.034 0.179
+11 1 po scsk5 0.176 0.379
+11 1 po scsk12 0.297 0.368
+11 1 po scsk19 0.411 0.355
+11 1 po scsk23 0.525 0.226
+11 1 po scsk26 0.415 0.277
+11 1 po scch3 -0.149 0.340
+11 1 po scch7 -0.015 0.445
+11 1 po scch10 0.061 0.602
+11 1 po scch15 0.349 0.316
+11 1 po scmi9 0.389 0.178
+11 1 po scmi14 0.594 0.158
+11 1 po scmi17 0.569 0.184
+11 1 po scmi22 0.395 0.238
+11 1 ne scsj1 0.307 0.177
+11 1 ne scsj8 0.271 0.311
+11 1 ne scsj11 0.339 0.247
+11 1 ne scsj16 0.244 0.295
+11 1 ne scsj21 0.280 0.215
+11 1 ne scis4 0.524 0.259
+11 1 ne scis13 0.149 0.385
+11 1 ne scis18 0.126 0.408
+11 1 ne scis25 0.399 0.284
+11 1 ne scoi2 0.605 0.301
+11 1 ne scoi6 0.501 0.253
+11 1 ne scoi20 0.327 0.302
+11 1 ne scoi24 0.441 0.266
+12 1 po sk 0.000 0.000
+12 1 po sj 0.000 0.000
+12 1 po ch 0.000 0.000
+12 1 po is 0.000 0.000
+12 1 po mi 0.000 0.000
+12 1 po oi 0.000 0.000
+12 1 ne sk 0.000 0.000
+12 1 ne sj 0.000 0.000
+12 1 ne ch 0.000 0.000
+12 1 ne is 0.000 0.000
+12 1 ne mi 0.000 0.000
+12 1 ne oi 0.000 0.000
+12 1 ne po -0.430 0.214
+12 1 sj sk 0.000 0.000
+12 1 ch sk 0.000 0.000
+12 1 ch sj 0.000 0.000
+12 1 is sk 0.000 0.000
+12 1 is sj 0.000 0.000
+12 1 is ch 0.000 0.000
+12 1 mi sk 0.000 0.000
+12 1 mi sj 0.000 0.000
+12 1 mi ch 0.000 0.000
+12 1 mi is 0.000 0.000
+12 1 oi sk 0.000 0.000
+12 1 oi sj 0.000 0.000
+12 1 oi ch 0.000 0.000
+12 1 oi is 0.000 0.000
+12 1 oi mi 0.000 0.000
+14 1 scsj1 0.619 0.033
+14 1 scoi2 0.298 0.037
+14 1 scch3 0.353 0.336
+14 1 scis4 0.323 0.039
+14 1 scsk5 0.462 0.045
+14 1 scoi6 0.359 0.032
+14 1 scch7 0.536 0.130
+14 1 scsj8 0.284 0.107
+14 1 scmi9 0.620 0.042
+14 1 scch10 0.220 0.360
+14 1 scsj11 0.412 0.030
+14 1 scsk12 0.328 0.042
+14 1 scis13 0.279 0.064
+14 1 scmi14 0.301 0.055
+14 1 scch15 0.524 0.035
+14 1 scsj16 0.397 0.045
+14 1 scmi17 0.428 0.037
+14 1 scis18 0.239 0.066
+14 1 scsk19 0.314 0.036
+14 1 scoi20 0.517 0.035
+14 1 scsj21 0.588 0.035
+14 1 scmi22 0.515 0.046
+14 1 scsk23 0.313 0.071
+14 1 scoi24 0.545 0.038
+14 1 scis25 0.422 0.030
+14 1 scsk26 0.426 0.045
+15 1 sk 1.000 0.000
+15 1 sj 1.000 0.000
+15 1 ch 1.000 0.000
+15 1 is 1.000 0.000
+15 1 mi 1.000 0.000
+15 1 oi 1.000 0.000
+15 1 po 1.000 0.000
+15 1 ne 1.000 0.000
+31 1 sk scsk5 0.792 0.111
+31 1 sk scsk12 0.829 0.133
+31 1 sk scsk19 0.773 0.203
+31 1 sk scsk23 0.380 0.376
+31 1 sk scsk26 0.465 0.290
+31 1 sk scsj1 -0.040 0.092
+31 1 sk scsj8 -0.136 0.067
+31 1 sk scsj11 -0.134 0.116
+31 1 sk scsj16 -0.133 0.065
+31 1 sk scsj21 -0.142 0.057
+31 1 sk scch3 0.254 0.243
+31 1 sk scch7 0.364 0.197
+31 1 sk scch10 0.245 0.267
+31 1 sk scch15 0.339 0.217
+31 1 sk scis4 -0.113 0.078
+31 1 sk scis13 -0.099 0.062
+31 1 sk scis18 -0.053 0.088
+31 1 sk scis25 -0.074 0.067
+31 1 sk scmi9 0.087 0.177
+31 1 sk scmi14 0.013 0.215
+31 1 sk scmi17 0.175 0.243
+31 1 sk scmi22 0.441 0.240
+31 1 sk scoi2 -0.032 0.146
+31 1 sk scoi6 -0.054 0.091
+31 1 sk scoi20 0.185 0.063
+31 1 sk scoi24 0.069 0.080
+31 1 sj scsk5 0.049 0.052
+31 1 sj scsk12 -0.023 0.040
+31 1 sj scsk19 -0.088 0.054
+31 1 sj scsk23 -0.329 0.167
+31 1 sj scsk26 -0.241 0.105
+31 1 sj scsj1 0.522 0.128
+31 1 sj scsj8 0.942 0.170
+31 1 sj scsj11 0.724 0.149
+31 1 sj scsj16 0.819 0.136
+31 1 sj scsj21 0.566 0.113
+31 1 sj scch3 0.066 0.122
+31 1 sj scch7 0.162 0.072
+31 1 sj scch10 0.158 0.094
+31 1 sj scch15 -0.005 0.073
+31 1 sj scis4 0.340 0.200
+31 1 sj scis13 0.287 0.106
+31 1 sj scis18 0.379 0.119
+31 1 sj scis25 0.420 0.162
+31 1 sj scmi9 0.171 0.084
+31 1 sj scmi14 0.025 0.080
+31 1 sj scmi17 0.008 0.106
+31 1 sj scmi22 0.095 0.096
+31 1 sj scoi2 0.403 0.266
+31 1 sj scoi6 0.445 0.189
+31 1 sj scoi20 0.339 0.144
+31 1 sj scoi24 0.213 0.166
+31 1 ch scsk5 0.194 0.106
+31 1 ch scsk12 0.149 0.045
+31 1 ch scsk19 0.116 0.118
+31 1 ch scsk23 0.285 0.358
+31 1 ch scsk26 0.299 0.191
+31 1 ch scsj1 0.038 0.148
+31 1 ch scsj8 0.068 0.060
+31 1 ch scsj11 0.157 0.104
+31 1 ch scsj16 0.030 0.071
+31 1 ch scsj21 0.113 0.064
+31 1 ch scch3 0.397 0.577
+31 1 ch scch7 0.721 0.158
+31 1 ch scch10 0.964 0.271
+31 1 ch scch15 0.459 0.144
+31 1 ch scis4 0.040 0.111
+31 1 ch scis13 0.036 0.037
+31 1 ch scis18 0.095 0.092
+31 1 ch scis25 0.004 0.088
+31 1 ch scmi9 0.214 0.106
+31 1 ch scmi14 0.124 0.189
+31 1 ch scmi17 0.222 0.250
+31 1 ch scmi22 0.316 0.206
+31 1 ch scoi2 0.022 0.238
+31 1 ch scoi6 0.010 0.132
+31 1 ch scoi20 0.028 0.061
+31 1 ch scoi24 0.042 0.089
+31 1 is scsk5 0.052 0.045
+31 1 is scsk12 -0.136 0.044
+31 1 is scsk19 -0.077 0.064
+31 1 is scsk23 -0.163 0.132
+31 1 is scsk26 -0.021 0.087
+31 1 is scsj1 0.136 0.117
+31 1 is scsj8 0.349 0.092
+31 1 is scsj11 0.374 0.148
+31 1 is scsj16 0.440 0.093
+31 1 is scsj21 0.263 0.097
+31 1 is scch3 0.142 0.120
+31 1 is scch7 0.198 0.052
+31 1 is scch10 0.005 0.053
+31 1 is scch15 -0.091 0.087
+31 1 is scis4 0.727 0.246
+31 1 is scis13 1.061 0.093
+31 1 is scis18 1.018 0.071
+31 1 is scis25 0.748 0.187
+31 1 is scmi9 -0.020 0.093
+31 1 is scmi14 -0.182 0.103
+31 1 is scmi17 -0.266 0.119
+31 1 is scmi22 -0.281 0.089
+31 1 is scoi2 0.636 0.313
+31 1 is scoi6 0.674 0.231
+31 1 is scoi20 0.500 0.140
+31 1 is scoi24 0.476 0.197
+31 1 mi scsk5 0.107 0.188
+31 1 mi scsk12 0.093 0.219
+31 1 mi scsk19 0.113 0.238
+31 1 mi scsk23 -0.102 0.359
+31 1 mi scsk26 0.011 0.287
+31 1 mi scsj1 0.191 0.090
+31 1 mi scsj8 -0.020 0.150
+31 1 mi scsj11 0.067 0.128
+31 1 mi scsj16 -0.052 0.117
+31 1 mi scsj21 0.040 0.112
+31 1 mi scch3 0.636 0.316
+31 1 mi scch7 -0.020 0.351
+31 1 mi scch10 -0.011 0.487
+31 1 mi scch15 0.306 0.281
+31 1 mi scis4 -0.115 0.115
+31 1 mi scis13 -0.151 0.084
+31 1 mi scis18 -0.150 0.081
+31 1 mi scis25 -0.105 0.093
+31 1 mi scmi9 0.406 0.164
+31 1 mi scmi14 0.556 0.188
+31 1 mi scmi17 0.315 0.211
+31 1 mi scmi22 0.103 0.252
+31 1 mi scoi2 -0.071 0.140
+31 1 mi scoi6 -0.055 0.131
+31 1 mi scoi20 -0.345 0.089
+31 1 mi scoi24 -0.229 0.110
+31 1 oi scsk5 -0.088 0.150
+31 1 oi scsk12 -0.172 0.140
+31 1 oi scsk19 -0.175 0.119
+31 1 oi scsk23 0.379 0.196
+31 1 oi scsk26 0.304 0.120
+31 1 oi scsj1 -0.017 0.116
+31 1 oi scsj8 0.220 0.111
+31 1 oi scsj11 -0.177 0.109
+31 1 oi scsj16 -0.090 0.201
+31 1 oi scsj21 0.175 0.082
+31 1 oi scch3 0.286 0.328
+31 1 oi scch7 -0.025 0.215
+31 1 oi scch10 -0.202 0.196
+31 1 oi scch15 0.149 0.094
+31 1 oi scis4 0.080 0.148
+31 1 oi scis13 0.020 0.160
+31 1 oi scis18 0.034 0.193
+31 1 oi scis25 0.042 0.168
+31 1 oi scmi9 0.006 0.114
+31 1 oi scmi14 -0.078 0.143
+31 1 oi scmi17 0.024 0.089
+31 1 oi scmi22 0.159 0.180
+31 1 oi scoi2 0.077 0.210
+31 1 oi scoi6 0.017 0.166
+31 1 oi scoi20 0.075 0.286
+31 1 oi scoi24 0.039 0.201
+31 1 po scsk5 0.205 0.442
+31 1 po scsk12 0.341 0.422
+31 1 po scsk19 0.468 0.404
+31 1 po scsk23 0.587 0.253
+31 1 po scsk26 0.442 0.295
+31 1 po scch3 -0.162 0.369
+31 1 po scch7 -0.019 0.554
+31 1 po scch10 0.071 0.702
+31 1 po scch15 0.393 0.356
+31 1 po scmi9 0.405 0.186
+31 1 po scmi14 0.608 0.163
+31 1 po scmi17 0.571 0.186
+31 1 po scmi22 0.446 0.268
+31 1 ne scsj1 0.330 0.190
+31 1 ne scsj8 0.351 0.404
+31 1 ne scsj11 0.424 0.309
+31 1 ne scsj16 0.313 0.378
+31 1 ne scsj21 0.327 0.251
+31 1 ne scis4 0.680 0.336
+31 1 ne scis13 0.199 0.513
+31 1 ne scis18 0.160 0.521
+31 1 ne scis25 0.535 0.381
+31 1 ne scoi2 0.796 0.397
+31 1 ne scoi6 0.650 0.328
+31 1 ne scoi20 0.386 0.356
+31 1 ne scoi24 0.497 0.300
+32 1 po sk 0.000 0.000
+32 1 po sj 0.000 0.000
+32 1 po ch 0.000 0.000
+32 1 po is 0.000 0.000
+32 1 po mi 0.000 0.000
+32 1 po oi 0.000 0.000
+32 1 ne sk 0.000 0.000
+32 1 ne sj 0.000 0.000
+32 1 ne ch 0.000 0.000
+32 1 ne is 0.000 0.000
+32 1 ne mi 0.000 0.000
+32 1 ne oi 0.000 0.000
+32 1 ne po -0.430 0.214
+32 1 sj sk 0.000 0.000
+32 1 ch sk 0.000 0.000
+32 1 ch sj 0.000 0.000
+32 1 is sk 0.000 0.000
+32 1 is sj 0.000 0.000
+32 1 is ch 0.000 0.000
+32 1 mi sk 0.000 0.000
+32 1 mi sj 0.000 0.000
+32 1 mi ch 0.000 0.000
+32 1 mi is 0.000 0.000
+32 1 oi sk 0.000 0.000
+32 1 oi sj 0.000 0.000
+32 1 oi ch 0.000 0.000
+32 1 oi is 0.000 0.000
+32 1 oi mi 0.000 0.000
+34 1 scsj1 0.713 0.042
+34 1 scoi2 0.515 0.063
+34 1 scch3 0.415 0.394
+34 1 scis4 0.543 0.063
+34 1 scsk5 0.628 0.062
+34 1 scoi6 0.606 0.050
+34 1 scch7 0.830 0.202
+34 1 scsj8 0.478 0.179
+34 1 scmi9 0.671 0.049
+34 1 scch10 0.298 0.489
+34 1 scsj11 0.645 0.044
+34 1 scsk12 0.431 0.055
+34 1 scis13 0.496 0.113
+34 1 scmi14 0.316 0.058
+34 1 scch15 0.665 0.047
+34 1 scsj16 0.652 0.074
+34 1 scmi17 0.431 0.038
+34 1 scis18 0.389 0.106
+34 1 scsk19 0.406 0.046
+34 1 scoi20 0.721 0.050
+34 1 scsj21 0.801 0.049
+34 1 scmi22 0.656 0.060
+34 1 scsk23 0.391 0.089
+34 1 scoi24 0.693 0.051
+34 1 scis25 0.759 0.054
+34 1 scsk26 0.483 0.051
+35 1 sk 1.000 0.000
+35 1 sj 1.000 0.000
+35 1 ch 1.000 0.000
+35 1 is 1.000 0.000
+35 1 mi 1.000 0.000
+35 1 oi 1.000 0.000
+35 1 po 1.000 0.000
+35 1 ne 1.000 0.000

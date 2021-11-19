@@ -1,0 +1,693 @@
+
+# Sample characteristics
+
+Concerning the relation between personality traits and the SCS total score, we found that the SCS total score was negatively associated with neuroticism, $b$ = -0.59, $SE$ = 0.03, Bayesian 95% CI [-0.65, -0.53] [@neff2007examination], and positively associated with extroversion, $b$ = 0.10, $SE$ = 0.03, Bayesian 95% CI [0.03, 0.17], and with agreeableness, $b$ = 0.07, $SE$ = 0.03, Bayesian 95% CI [0.01, 0.12].
+<!-- Bayesian $R^2$ = 0.44.  -->
+<!-- The SCS total score grew with age, $b$ = 0.32, $SE$ = 0.04, Bayesian 95% CI [0.23,  0.40].  -->
+We found no evidence of an association with level of education, years of experience as rescue worker, time gap since the last training, and rate of rescue worker activity. 
+<!-- Bayesian $R^2$ = 0.12. -->
+<!-- Women manifested lower levels of the SCS than men [@yarnell2019gender], $\Delta \text{SCS}$ = 0.28, Bayesian 95% CI [0.13, 0.42], Cohen's _d_ = 0.28. -->
+
+<!-- In a further analysis, we examined the relation between either PTG or IES-R, as DVs,  and the above mentioned predictors.  -->
+We also found that PTG was positively associated with neuroticism, $b$ = 0.19, $SE$ = 0.05, Bayesian 95% CI [0.10,  0.28], extroversion, $b$ = 0.24, $SE$ = 0.05, Bayesian 95% CI [0.14,  0.33], conscientiousness, $b$ = 0.10, $SE$ = 0.04, Bayesian 95% CI [0.01,  0.18], age, $b$ = 0.15, $SE$ = 0.04, Bayesian 95% CI [0.06,  0.24] [see @garnefski2008post], and rate of rescue-worker activity, $b$ = 0.08, $SE$ = 0.04, Bayesian 95% CI [0.00,  0.16]; moreover, males showed lower levels of PTG than females, $b$ = -0.20, $SE$ = 0.08, Bayesian 95% CI [-0.36,  -0.04]. 
+<!-- Bayesian $R^2$ = 0.14. -->
+
+IES-R scores were positively associated with neuroticism, $b$ = 0.18, $SE$ = 0.04, Bayesian 95% CI [0.11,  0.25] [@inoue2006psychological], and educational level, $b$ = -0.06, $SE$ = 0.02, Bayesian 95% CI [-0.10,  -0.01] [@wu2005posttraumatic], but negatively associated with age, $b$ = -0.05, $SE$ = 0.03, Bayesian 95% CI [-0.10,  -0.00].  
+
+<!-- Some general data properties, which are needed to determine the most appropriate analytical approach, were examined. The absence of multivariate normality in all items (Mardia's Test: sig. < .01), and missing data (11.3% of the cases, with a completely random distribu- tion of the missing data; Little's test sig. p > .05) were observed. Given the ordinal nature of the data, the weighted least square with adjusted mean and variance (WLSMV) (Beauducel & Herzberg, 2006; Rhemtulla et al., 2012) approach was used as an estimation method of the factor models. -->
+
+<!-- In all studied models, goodness of fit was determined by using the comparative fit index (CFI), the Tucker- Lewis index (TLI) and the root mean square of approxi- mation (RMSEA). For the CFI and TLI, values above .90 and .95, respectively, indicate an acceptable and adequate fit (Chen, 2007, Hu & Bentler, 1999). In the case of the RMSEA, values below .08 and .05, respectively, indicate an acceptable and appropriate fit (Cheung & Rensvold, 2002). To determine the significance of the fit differences between the nested or equivalent models, Chen (Chen, 2007) and Cheung and Resvold's (Cheung & Rensvold, 2002) recommendations were followed. According to these scholars, increases in the CFI and TLI less than .01 and decreases in the RMSEA less than .015 suggest that there are no substantial differences in fit among the compared models. All analyses were performed by using MPlus v 7.3 (Muthén & Muthén, 2014). -->
+
+<!-- The following data analytic strategy was adopted. First, six measurement models were estimated via ICM-CFA (independent clusters model of confirmatory factor analysis). Second, and based on the results from the previous step, an ESEM model with a similar configuration to the four-correlated-factor structure proposed by the DSM–5 was estimated. Third, an ESEM bifactor model was estimated to explore the existence of a common source of variance to all PTSD symptoms. To estimate the model-based reliability for each factor the omega index was calculated in the case of the first order models (McDonald, 1999). The omega hierarchical index (Zinbarg et al., 2006) and the omega sub-scale were estimated in the case of the bifactor model (Reise, 2012). These indexes quantify the degree to which the factor scores accurately reflect the position of the subject in the latent variable (values above .70 are required to ensure the psychometric interpretability of the factor). To estimate the internal consistency of each factor, Cronbach's alpha was used. -->
+
+\newpage
+# SCS factor structure
+
+
+```{r, echo=FALSE}
+the_dir <- here("scripts", "_mplus/")
+```
+
+```{r, echo=FALSE, message=FALSE}
+res_m1 <- readModels(paste0(the_dir, "m1_one_fact_cfa.out"), quiet = TRUE)
+res_m2a <- readModels(paste0(the_dir, "m2a_two_fact_cfa.out"), quiet = TRUE)
+res_m2b <- readModels(paste0(the_dir, "m2b_two_fact_esem.out"), quiet = TRUE)
+res_m3a <- readModels(paste0(the_dir, "m3a_six_fact_cfa.out"), quiet = TRUE)
+res_m3b <- readModels(paste0(the_dir, "m3b_six_fact_esem.out"), quiet = TRUE)
+res_m4a <- readModels(paste0(the_dir, "m4a_bifactor_six_s_fact.out"), quiet = TRUE)
+res_m4a <- readModels(paste0(the_dir, "m4a_bifactor_six_s_fact.out"), quiet = TRUE)
+res_m4b <- readModels(paste0(the_dir, "m4b_bifactor_esem.out"), quiet = TRUE)
+res_m5a <- readModels(paste0(the_dir, "m5a_two_bifactor_cfa.out"), quiet = TRUE)
+res_m5b <- readModels(paste0(the_dir, "m5b_two_bifactor_esem.out"), quiet = TRUE)
+```
+
+```{r, echo=FALSE}
+# omega_t <- readRDS(here("data", "processed", "scs_omega_total.Rds"))
+```
+
+We compared the fit of all models discussed by @neff2019examining. We started with the unidimensional CFA model, which clearly proved to be inadequate, CFI = `r res_m1$summaries$CFI`, TLI = `r res_m1$summaries$TLI`, RMSEA = `r res_m1$summaries$RMSEA_Estimate` [90% CI `r res_m1$summaries$RMSEA_90CI_LB`-`r res_m1$summaries$RMSEA_90CI_UB`], SRMR = `r res_m1$summaries$SRMR`, $\omega_t$ = `r omega_t[[1]]`. 
+We then considered all the factor structures that had been discussed by @neff2019examining. The list of the examined models, together with their fit indexes, is provide below:
+
+- a two-factor CFA for the positive and the negative components of SC, CFI = `r res_m2a$summaries$CFI`, TLI = `r res_m2a$summaries$TLI`, RMSEA = `r res_m2a$summaries$RMSEA_Estimate` [90% CI `r res_m2a$summaries$RMSEA_90CI_LB`-`r res_m2a$summaries$RMSEA_90CI_UB`], SRMR = `r res_m2a$summaries$SRMR`, $\omega_t$ = `r omega_t[[3]]`;
+
+- a two-factor ESEM, CFI = `r res_m2b$summaries$CFI`, TLI = `r res_m2b$summaries$TLI`, RMSEA = `r res_m2b$summaries$RMSEA_Estimate` [90% CI `r res_m2b$summaries$RMSEA_90CI_LB`-`r res_m2b$summaries$RMSEA_90CI_UB`], SRMR = `r res_m2b$summaries$SRMR`, $\omega_t$ = `r omega_t[[4]]`;
+
+- a six-factor CFA, CFI = `r res_m3a$summaries$CFI`, TLI = `r res_m3a$summaries$TLI`, RMSEA = `r res_m3a$summaries$RMSEA_Estimate` [90% CI `r res_m3a$summaries$RMSEA_90CI_LB`-`r res_m3a$summaries$RMSEA_90CI_UB`], SRMR = `r res_m3a$summaries$SRMR`, $\omega_t$ = `r omega_t[[5]]`;
+
+- a six-factor ESEM, CFI = `r res_m3b$summaries$CFI`, TLI = `r res_m3b$summaries$TLI`, RMSEA = `r res_m3b$summaries$RMSEA_Estimate` [90% CI `r res_m3b$summaries$RMSEA_90CI_LB`-`r res_m3b$summaries$RMSEA_90CI_UB`], SRMR = `r res_m3b$summaries$SRMR`, $\omega_t$ = `r omega_t[[6]]`;
+
+- a bifactor-CFA (1 G- and 6 S-factors), CFI = `r res_m4a$summaries$CFI`, TLI = `r res_m4a$summaries$TLI`, RMSEA = `r res_m4a$summaries$RMSEA_Estimate` [90% CI `r res_m4a$summaries$RMSEA_90CI_LB`-`r res_m4a$summaries$RMSEA_90CI_UB`], SRMR = `r res_m4a$summaries$SRMR`, $\omega_t$ = `r omega_t[[7]]`;
+
+- a bifactor-ESEM (1 G- and 6 S-factors), CFI = `r res_m4b$summaries$CFI`, TLI = `r res_m4b$summaries$TLI`, RMSEA = `r res_m4b$summaries$RMSEA_Estimate` [90% CI `r res_m4b$summaries$RMSEA_90CI_LB`-`r res_m4b$summaries$RMSEA_90CI_UB`], SRMR = `r res_m4b$summaries$SRMR`, $\omega_t$ = `r omega_t[[8]]`; 
+
+- a two-bifactor (two-tier) CFA model (2 G- and 6 S-factors), CFI = `r res_m5a$summaries$CFI`, TLI = `r res_m5a$summaries$TLI`, RMSEA = `r res_m5a$summaries$RMSEA_Estimate` [90% CI `r res_m5a$summaries$RMSEA_90CI_LB`-`r res_m5a$summaries$RMSEA_90CI_UB`], SRMR = `r res_m5a$summaries$SRMR`, $\omega_t$ = `r omega_t[[9]]`; 
+
+- a two-bifactor (two-tier) ESEM model (2 G- and 6 S-factors), CFI = `r res_m5b$summaries$CFI`, TLI = `r res_m5b$summaries$TLI`, RMSEA = `r res_m5b$summaries$RMSEA_Estimate` [90% CI `r res_m5b$summaries$RMSEA_90CI_LB`-`r res_m5b$summaries$RMSEA_90CI_UB`], SRMR = `r res_m5b$summaries$SRMR`, $\omega_t$ = `r omega_t[[10]]`.
+
+```{r, echo=FALSE}
+model_results <- readModels(paste0(the_dir, "m2a_two_fact_cfa.out"), quiet = TRUE)
+rho_pos_neg_1 <- model_results$parameters$stdyx.standardized %>% 
+  dplyr::filter(
+    paramHeader == 'NEG.WITH',
+    param == 'POS'
+  )
+```
+
+```{r, echo=FALSE}
+model_results <- readModels(paste0(the_dir, "m2b_two_fact_esem.out"), quiet = TRUE)
+rho_pos_neg_2 <- model_results$parameters$stdyx.standardized %>% 
+  dplyr::filter(
+    paramHeader == 'NEG.WITH',
+    param == 'POS'
+  )
+```
+
+```{r, echo=FALSE}
+model_results <- readModels(paste0(the_dir, "m3a_six_fact_cfa.out"), quiet = TRUE)
+
+y1 <- model_results$parameters$stdyx.standardized[27:41, 3]
+```
+
+```{r, echo=FALSE}
+model_results <- readModels(paste0(the_dir, "m3b_six_fact_esem.out"), quiet = TRUE)
+
+y2 <- model_results$parameters$stdyx.standardized[157:171, 3]
+```
+
+```{r, echo=FALSE}
+model_results <- readModels(paste0(the_dir, "m5a_two_bifactor_cfa.out"), quiet = TRUE)
+
+rho_pos_neg_3 <- model_results$parameters$stdyx.standardized %>% 
+  dplyr::filter(
+    paramHeader == 'NE.WITH',
+    param == 'PO',
+  )
+```
+
+```{r, echo=FALSE}
+model_results <- readModels(paste0(the_dir, "m5b_two_bifactor_esem.out"), quiet = TRUE)
+
+rho_pos_neg_4 <- model_results$parameters$stdyx.standardized %>% 
+  dplyr::filter(
+    paramHeader == 'NE.WITH',
+    param == 'PO',
+  )
+```
+
+For the two-factor CFA for the CS and RUS of SC, the correlation between the factors was `r rho_pos_neg_1$est`.
+For the two-factor ESEM, the correlation between the factors was `r rho_pos_neg_2$est`.
+For the 6-factor CFA, the correlations between factors ranged between `r min(y1)` and `r max(y1)`.
+For the 6-factor ESEM, the correlations between factors ranged between `r min(y2)` and `r max(y2)`.
+For the two-bifactor (two-tier) CFA model (2 G- and 6 S-factors), the correlation between the CS and RUS factors is `r rho_pos_neg_3$est`.
+For the two-bifactor (two-tier) ESEM model (2 G- and 6 S-factors), the correlation between the CS and RUS factors is `r rho_pos_neg_4$est`.
+
+<!-- In our data, both a bifactor-ESEM (1 G- and 6 S-factors) and a two-bifactor (two-tier) ESEM model (2 G- and 6 S-factors) provided an excellent adaptation to the data. -->
+In our sample, the two-bifactor (two-tier) ESEM model, which included 6 uncorrelated factors (self-kindness, reduced self-judgment, common humanity, reduced isolation, mindfulness, and reduced over-identification) and two correlated CS (loading on the self-kindness, common humanity, and mindfulness items) and RUS (loading on the reduced self-judgment, reduced isolation, and reduced over-identification items) factors showed a marginally better fit than the one bifactor-ESEM (1 G- and 6 S-factors) model. What is crucial is that, among the considered models, those that provide the best fits to the data include distinct factors corresponding to the six dimensions of the SCS (self-kindness, reduced self-judgment, common humanity, reduced isolation, mindfulness, and reduced over-identification). 
+
+
+
+<!-- m2b -->
+\newpage
+# A two-factor correlated model with two unitary factors representing CS and RUS 
+
+## Mplus syntax
+
+````
+TITLE: 2 factor ESEM.
+DATA:
+  FILE IS selfcompassionitems.dat;
+VARIABLE:
+  NAMES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 
+            scsk23 scoi24 scis25 scsk26; 
+  MISSING ARE ALL(-9);
+  USEVARIABLES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 
+            scsk23 scoi24 scis25 scsk26; 
+  CATEGORICAL ARE all;
+ANALYSIS:
+  ! Requesting the weighted least squares mean- and variance-adjusted estimator
+  ESTIMATOR = WLSMV;
+  ROTATION = target;
+MODEL:
+  pos BY scsk5 scsk12 scsk19 scsk23 scsk26 scsj1~0 scsj8~0 scsj11~0 
+         scsj16~0 scsj21~0 scch3 scch7 scch10 scch15 scis4~0 scis13~0 
+         scis18~0 scis25~0 scmi9 scmi14 scmi17 scmi22 scoi2~0 scoi6~0 
+         scoi20~0 scoi24~0 (*1);
+  neg BY scsk5~0 scsk12~0 scsk19~0 scsk23~0 scsk26~0 scsj1 scsj8 scsj11 
+         scsj16 scsj21 scch3~0 scch7~0 scch10~0 scch15~0 scis4 scis13 
+         scis18 scis25 scmi9~0 scmi14~0 scmi17~0 scmi22~0 scoi2 scoi6 
+         scoi20 scoi24 (*1);
+! Requesting standardized parameter estimates
+OUTPUT: stdyx;
+````
+
+\newpage
+### Standardized Factor Loadings
+
+\input{../output/m2b.tex}
+
+
+<!-- m7 -->
+\newpage
+# A two-factor correlated model with two unitary factors representing CS and RUS 
+
+## Mplus syntax -- R factor extraction
+
+````
+TITLE: 2 factor ESEM v2.
+DATA:
+  FILE IS selfcompassionitems.dat;
+VARIABLE:
+  NAMES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 
+            scsk23 scoi24 scis25 scsk26; 
+  MISSING ARE ALL(-9);
+  USEVARIABLES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 
+            scsk23 scoi24 scis25 scsk26; 
+  CATEGORICAL ARE all;
+ANALYSIS: 
+  ESTIMATOR = WLSMV; 
+  ROTATION = oblimin; 
+MODEL:
+  pos BY scsj1@.06 scoi2@-.05 scch3@.41 scis4@-.070 scsk5@.65 scoi6@-.03 
+        scch7@0.49 scsj8@.01 scmi9@0.46 scch10@0.55 scsj11@.02 scsk12@.69 
+        scis13@-.04 scmi14@0.47 scch15@0.66 scsj16@-0.01 scmi17@0.58 
+        scis18@0.03 scsk19@0.70 scoi20@0.07 scsj21@0.02 scmi22@0.65 
+        scsk23@0.56 scoi24@-0.01 scis25@-0.04 scsk26@0.64;
+  neg BY scsj1@.49 scoi2@.78 scch3@.22 scis4@.78 scsk5@.13 scoi6@.79 
+        scch7@.33 scsj8@.70 scmi9@.07 scch10@.24 scsj11@.68 scsk12@-.03 
+        scis13@.71 scmi14@-.17 scch15@.02 scsj16@.69 scmi17@-.2 
+        scis18@.77 scsk19@-.06 scoi20@.64 scsj21@.56 scmi22@-.05 
+        scsk23@-.22 scoi24@0.62 scis25@.75 scsk26@-.06;
+  pos@1;
+  neg@1;
+OUTPUT: stdyx;
+````
+
+\newpage
+### Standardized Factor Loadings
+
+\input{../output/m7.tex}
+
+
+
+<!-- m6a -->
+\newpage
+# A two-correlated factors bifactor model
+
+## Mplus syntax
+
+````
+TITLE: bifactor 2-correlated-factors ESEM.
+DATA:
+  FILE IS selfcompassionitems.dat;
+VARIABLE:
+  NAMES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22
+            scsk23 scoi24 scis25 scsk26;
+  MISSING ARE ALL(-9);
+  USEVARIABLES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22
+            scsk23 scoi24 scis25 scsk26;
+  CATEGORICAL ARE all;
+ANALYSIS:
+  ! Requesting the weighted least squares mean- and variance-adjusted estimator
+  ESTIMATOR = WLSMV;
+  ROTATION = target;
+MODEL:
+  sc BY scsk5 scsk12 scsk19 scsk23 scsk26 scsj1 scsj8 scsj11
+        scsj16 scsj21 scch3 scch7 scch10 scch15 scis4 scis13
+        scis18 scis25 scmi9 scmi14 scmi17 scmi22 scoi2 scoi6
+        scoi20 scoi24(*1);
+  pos BY scsk5 scsk12 scsk19 scsk23 scsk26 scsj1~0 scsj8~0 scsj11~0
+         scsj16~0 scsj21~0 scch3 scch7 scch10 scch15 scis4~0 scis13~0
+         scis18~0 scis25~0 scmi9 scmi14 scmi17 scmi22 scoi2~0 scoi6~0
+         scoi20~0 scoi24~0 (*1);
+  neg BY scsk5~0 scsk12~0 scsk19~0 scsk23~0 scsk26~0 scsj1 scsj8 scsj11
+         scsj16 scsj21 scch3~0 scch7~0 scch10~0 scch15~0 scis4 scis13
+         scis18 scis25 scmi9~0 scmi14~0 scmi17~0 scmi22~0 scoi2 scoi6
+         scoi20 scoi24 (*1);
+! Requesting standardized parameter estimates
+OUTPUT: stdyx;
+````
+
+\newpage
+### Standardized Factor Loadings
+
+\input{../output/m6a.tex}
+
+
+<!-- m6b -->
+\newpage
+## Correlated residuals between items SCCH10 and SCCH7, and between items SCIS18 and SCIS13
+
+### Mplus syntax
+
+````
+TITLE: 2 factor bi-factor ESEM with correlated residuals.
+DATA:
+  FILE IS selfcompassionitems.dat;
+VARIABLE:
+  NAMES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 
+            scsk23 scoi24 scis25 scsk26; 
+  MISSING ARE ALL(-9);
+  USEVARIABLES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 
+            scsk23 scoi24 scis25 scsk26; 
+  CATEGORICAL ARE all;
+ANALYSIS:
+  ! Requesting the weighted least squares mean- and variance-adjusted estimator
+  ESTIMATOR = WLSMV;
+  ROTATION = target;
+MODEL:
+  sc BY scsk5 scsk12 scsk19 scsk23 scsk26 scsj1 scsj8 scsj11 
+        scsj16 scsj21 scch3 scch7 scch10 scch15 scis4 scis13 
+        scis18 scis25 scmi9 scmi14 scmi17 scmi22 scoi2 scoi6 
+        scoi20 scoi24 (*1);
+  pos BY scsk5 scsk12 scsk19 scsk23 scsk26 scsj1~0 scsj8~0 scsj11~0 
+         scsj16~0 scsj21~0 scch3 scch7 scch10 scch15 scis4~0 scis13~0 
+         scis18~0 scis25~0 scmi9 scmi14 scmi17 scmi22 scoi2~0 scoi6~0 
+         scoi20~0 scoi24~0 (*1);
+  neg BY scsk5~0 scsk12~0 scsk19~0 scsk23~0 scsk26~0 scsj1 scsj8 scsj11 
+         scsj16 scsj21 scch3~0 scch7~0 scch10~0 scch15~0 scis4 scis13 
+         scis18 scis25 scmi9~0 scmi14~0 scmi17~0 scmi22~0 scoi2 scoi6 
+         scoi20 scoi24 (*1);
+  scch10 WITH scch7;
+  scis18 WITH scis13;
+! Requesting standardized parameter estimates
+OUTPUT: stdyx;
+````
+
+\newpage
+### Standardized Factor Loadings
+
+\input{../output/m6b.tex}
+
+\newpage
+
+# Latent Profile Analysis
+
+<!-- By following @ullrich2020use, we select the best LPA model of the SCS by specifying 1 through 6 profiles.  -->
+Prior to the analysis, the six self-compassion dimensions were standardized and scores on the three RUS SCS sub-scales were reversed (_i.e._, they were indicators of "lack of" Self judgment, Overidentification, and Isolation). 
+By following @ullrich2020use, we select the best LPA model of the SCS by specifying 1 through 6 profiles. 
+Model selection was based on an analytic hierarchy process resting on the comparison of fit indexes. 
+The best solution was a model with 6 classes.
+All models were fit in MPLUS 8.6 and freely estimated the means and variances of indicators with robust maximum likelihood. 
+<!-- To explain the procedure that was used to test the hypothesis H1 described in the manuscript, let us examine, for example, the contrast between the profiles 3 and 6 described in Fig.\ \@ref(fig:figureLPA) for the PTG dependent variable. According to H1, the mean difference in PTG scores should only depend on the SC components of the SCS scale. Therefore, profile 6 (_High CS Medium RUS_) is expected to have a higher PTG mean value than profile 3 (_Low CS High RUS_). This prediction was satisfied in the present sample (0.21 vs. -0.32) and, therefore, we coded the results of this contrast as 1 ("success").  -->
+<!-- If we compare these same two profiles in terms of the complementary hypothesis (_i.e._, the mean difference in PTG scores should only depend on the RUS components of the SCS scale), then we should expect that a higher PTG score in in profile 3 than in profile 6. This did not happen and, therefore, this contrast was coded as 0 in terms of the considered hypothesis.  -->
+
+Two multilevel Bayesian regressions models were run with either PTG or IES-R scores as the dependent variable and group membership according to the six profile solution as independent variable. All contrasts between PTG or IES-R mean pairs were evaluated with the Tukey correction. The resulting HPD 95% intervals not including the zero point were  coded with 1, if they were consistent with the prediction formulated according to the relevant dimensions specified by H1 or H2, and with 0 if they were not. For example, let us consider the contrast between the profiles 3 and 6 described in Fig.\ \@ref(fig:figureLPA) for the PTG dependent variable. According to H1, the mean difference in PTG scores should only depend on the SC components of the SCS scale. Therefore, profile 6 (_High CS Medium RUS_) is expected to have a higher PTG mean value than profile 3 (_Low CS High RUS_). This prediction was satisfied in the present sample (0.21 vs. -0.32) and, therefore, we coded the results of this contrast as 1 ("success"). If we compare these same two profiles in terms of H2 (_i.e._, the mean difference in PTG scores should only depend on the RUS components of the SCS scale), then we should expect a higher PTG score in profile 3 than in profile 6. This did not happen and, therefore, in terms of H2, this contrast was coded as 0. 
+
+Adjusted posterior means were then computed with the `emmeans` R package. 
+The procedure described in the example provided in the manuscript was applied to each of the 13 contrasts with HPD 95% intervals not including the zero point (by considering both for the contrasts computed with PTG as the dependent variable and the contrasts computed with IES-R as the dependent variable). In this manner, we obtained 13 out of 13 successes when "success" was coded according to H1, and 5 out of 13 successes when "success" was coded according to H2.
+
+The analysis of this difference in terms of "proportion correct" produced a posterior median difference of 4.16 with a MAD standard deviation of 1.49 (or, in frequentist terms, $\Delta$ prop. = 0.62, _SE_ = 0.13, _p_ = 0.00), which indicates a reliable difference. We interpret this result as supporting H1 (_i.e._, the CS and RUS components have functionally different purposes) rather than H2 (_i.e._, the six sub-scales of the SCS do not measure functionally different dimensions of the construct).
+
+
+\newpage
+
+# SEM models
+
+## Model M0
+
+M0 considers two endogenous variables: post-traumatic growth (ptgr) and post-traumatic stress (ptss) and their relations with 4 exogenous variables: coping (cope), perceived social support (soc), self-compassion (sc), and neuroticism (neuro). In model M0, only the regression effects of cope and soc are considered. Other two variables also included (self-compassion and neuroticism), althought they have no effect on the endogenous variables, in order to allow comparisons between nested models.
+
+Model 0 comprised six latent factors: self-compassion, coping, perceived social support, Neuroticism, post-traumatic growth, and post-traumatic stress disorder. Each latent variable was identified by its sub-scale scores as indicators. Self-compassion was represented as a unitary construct with six indicators.
+Model 0 included direct paths between two exogenous variables (coping, perceived social support) and the two endogenous variables of interest (post-traumatic growth, and post-traumatic stress disorder).
+No direct paths were specified between both self-compassion and neuroticism and the two exogenous variables.
+
+### Model's definition (lavaan syntax)
+
+````
+model0 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+          personal_strength + spirituality_changes + 
+          interpersonal_relationships
+  # pts
+  ptss =~ avoiding + intrusivity + iperarousal
+  # coping
+  cope =~ social_support + avoiding_strategies + 
+          positive_attitude + problem_orientation + 
+          transcendent_orientation
+  # perceived social support
+  soc =~ family + friends + significant_other
+  # self-compassion
+  sc =~ self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  # regressions
+  ptgr ~ cope + soc  
+  ptss ~ cope + soc 
+  # Residual correlations
+  self_judgment ~~ self_kindness
+  "
+````
+
+Modification indexes suggested the inclusion of a residual covariance between the subscales of Self judgment and Self kindness.
+Also with this specification, Model 0 showed an unacceptable fit with the data, $\chi^2$(`r fit_meas_m0[2]`) = `r fit_meas_m0[1]`, $\chi^2$/df = `r fit_meas_m0[1] / fit_meas_m0[2]`, CFI = `r fit_meas_m0[3]`, NFI = `r fit_meas_m0[5]`, TLI = `r fit_meas_m0[6]`, RMSEA = `r fit_meas_m0[8]`, and SRMS = `r fit_meas_m0[9]`.
+Overall, the CFA fit indexes did not support Model 0, which did not include  regression effects for both self-compassion and neuroticism.
+
+\newpage
+## Model 1 
+
+M1 considers, besides the regression effects of M0, also an effect of self-compassion, but without distinguishing the RUS and CS components. 
+Modification indexes suggested the addition of a residual correlation between Self-judgment and Self-kindness.
+
+### Model's definition (lavaan syntax)
+
+In model M1, self-compassion was conceived as a unitary construct defined by six indicators (_i.e._, no distinction between CS and RUS was made).
+Model 1 comprised two additional direct regression paths between self compassion and the two endogenous variables, which improved model fit compared to Model 0,  $\Delta \chi^2$(`r anova_m0m1[2, 6]`) = `r round(anova_m0m1[2, 5], 2)`, $p =$ `r round(anova_m0m1[2, 7], 4)`. However, the overall model fit was still
+unacceptable, $\chi^2$(`r fit_meas_m1[2]`) = `r fit_meas_m1[1]`, $\chi^2$/df = `r fit_meas_m1[1] / fit_meas_m1[2]`, CFI = `r fit_meas_m1[3]`, NFI = `r fit_meas_m1[5]`, TLI = `r fit_meas_m1[6]`, RMSEA = `r fit_meas_m1[8]`, and SRMS = `r fit_meas_m1[9]`.
+
+````
+model1 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+          personal_strength + spirituality_changes + 
+          interpersonal_relationships
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  # coping
+  cope =~ social_support + avoiding_strategies + 
+          positive_attitude + problem_orientation + 
+          transcendent_orientation
+  # perceived social support
+  soc =~ family + friends + significant_other
+  # self-compassion
+  sc =~ self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  # regressions
+  ptgr ~ cope + soc + sc 
+  ptss ~ cope + soc + sc 
+  # residual correlations
+  self_judgment ~~ self_kindness
+  "
+````
+
+\newpage
+
+## Model 1a 
+
+Model 1a attempted to improve the fit of Model 1 by including only a subset of indicators for Coping (_i.e._, Positive attitude and Problem orientation), because Coping was poorly defined by the other indicators. This modification improved the model fit substantially, $\Delta \chi^2$(`r anova_m0m1a[2, 6]`) = `r round(anova_m0m1a[2, 5], 2)`, $p =$ `r round(anova_m0m1a[2, 7], 4)`. However, the overall model fit was still unacceptable, $\chi^2$(`r fit_meas_m1a[2]`) = `r fit_meas_m1a[1]`, $\chi^2$/df = `r fit_meas_m1a[1] / fit_meas_m1a[2]`, CFI = `r fit_meas_m1a[3]`, NFI = `r fit_meas_m1a[5]`, TLI = `r fit_meas_m1a[6]`, RMSEA = `r fit_meas_m1a[8]`, and SRMS = `r fit_meas_m1a[9]`.
+
+### Model's definition (lavaan syntax)
+````
+model1a <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+  # perceived social support
+  soc =~ family + friends + significant_other
+  # self-compassion
+  sc =~ self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  sc ~~ neuro
+  soc ~~ cope
+  soc ~~ sc
+  soc ~~ neuro
+  cope ~~ sc
+  cope ~~ neuro
+  # regressions
+  ptgr ~ cope + soc + sc 
+  ptss ~ cope + soc + sc 
+  # residual correlations
+  self_judgment ~~ self_kindness
+"
+````
+
+\newpage
+## Model 2 
+
+Model 2 was identical to Model 1a, except from the fact that, instead of having a unitary self-compassion latent variable, the "lack of" Self judgment, Overidentification, and Isolation indicators revealed the RUS latent variable, and the Self-kindness, Common humanity, and Mindfulness indicators revealed the CS latent variable. Model 2 represented an improvement of fit relative to Model 1a,  $\Delta \chi^2$(`r anova_m2m1a[2, 6]`) = `r round(anova_m2m1a[2, 5], 2)`, $p =$ `r round(anova_m2m1a[2, 7], 4)`. Overall, the model fit indexes underlined a good fit of Model 2, $\chi^2$(`r fit_meas_m2[2]`) = `r fit_meas_m2[1]`, $\chi^2$/df = `r fit_meas_m2[1] / fit_meas_m2[2]`, CFI = `r fit_meas_m2[3]`, NFI = `r fit_meas_m2[5]`, TLI = `r fit_meas_m2[6]`, RMSEA = `r fit_meas_m2[8]`, and SRMS = `r fit_meas_m2[9]`.
+
+### Model's definition (lavaan syntax)
+
+````
+model2 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+  # perceived social support
+  soc =~ family + friends + significant_other
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  psc ~~ nsc
+  psc ~~ neuro
+  nsc ~~ neuro
+  soc ~~ cope
+  soc ~~ nsc
+  soc ~~ psc
+  soc ~~ neuro
+  cope ~~ nsc
+  cope ~~ psc
+  cope ~~ neuro
+  # regressions
+  ptgr ~ cope + soc + nsc + psc 
+  ptss ~ cope + soc + nsc + psc 
+  # residual correlations
+  self_judgment ~~ self_kindness
+"
+````
+
+
+\newpage
+# Model 3 
+
+Model M3 adds the regression coefficient for Neuroticism.
+
+````
+model3 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+  # perceived social support
+  soc =~ family + friends + significant_other
+  # self-compassion
+  psc =~ self_kindness + common_humanity + mindfulness
+  nsc =~ self_judgment + isolation + over_identification
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  # regressions
+  ptss ~ cope + soc + nsc + psc + neuro
+  ptgr ~ cope + soc + nsc + psc + neuro
+  # residual correlations
+  self_judgment ~~ self_kindness
+"
+````
+
+
+
+\newpage
+# Model 4 
+
+Model 4 remove the two self-compassion regression effects from M3.
+
+````
+model4 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  # ptss
+  ptss =~ avoiding + intrusivity + iperarousal
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+  # perceived social support
+  soc =~ family + friends + significant_other
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  # regressions
+  ptgr ~ cope + soc + neuro
+  ptss ~ cope + soc + neuro
+# residula correlations
+  self_judgment ~~ self_kindness
+"
+````
+
+
+
+\newpage
+# Model 5
+
+M5 remove only the regression effect of the negative component of self-compassion from M4.
+
+````
+model5 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+  # perceived social support
+  soc =~ family + friends + significant_other
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  # regressions
+  ptgr ~ cope + soc + psc + neuro
+  ptss ~ cope + soc + psc + neuro
+  # residual correlations
+  self_judgment ~~ self_kindness
+"
+````
+
+\newpage
+# Model 6
+
+M6 removes only the positive component of self-compassion from M4.
+
+```{r}
+model6 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+  # perceived social support
+  soc =~ family + friends + significant_other
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  # regressions
+  ptgr ~ cope + soc + nsc + neuro
+  ptss ~ cope + soc + nsc + neuro
+  # residual correlations
+  self_judgment ~~ self_kindness
+"
+```
+
+\newpage
+# Model 7
+
+M7: mediation model with the two components of self-compassion
+
+````
+model7 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+  # perceived social support
+  soc =~ family + friends + significant_other
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  # regressions
+  ptgr ~ dg_cope*cope + dg_soc*soc + dg_neuro*neuro
+  ptss ~ ds_cope*cope + ds_soc*soc + ds_neuro*neuro
+  nsc ~ nsc_cope*cope + nsc_soc*soc + nsc_neuro*neuro
+  psc ~ psc_cope*cope + psc_soc*soc + psc_neuro*neuro
+  ptgr ~ ig_nsc*nsc + ig_psc*psc 
+  ptss ~ is_nsc*nsc + is_psc*psc
+  # residual correlations
+  self_judgment ~~ self_kindness
+  # indirect and total effects
+  # cope
+  i_cope_s := nsc_cope * is_nsc + psc_cope * is_psc
+  i_cope_g := nsc_cope * ig_nsc + psc_cope * ig_psc
+  tot_cope_s := i_cope_s + ds_cope
+  tot_cope_g := i_cope_g + dg_cope
+  tot_cope := i_cope_s + i_cope_g
+  # soc
+  i_soc_s := nsc_soc * is_nsc + psc_soc * is_psc
+  i_soc_g := nsc_soc * ig_nsc + psc_soc * ig_psc
+  tot_soc_s := i_soc_s + ds_soc
+  tot_soc_g := i_soc_g + dg_soc
+  tot_soc := i_soc_s + i_soc_g
+  # neuro
+  i_neuro_s := nsc_neuro * is_nsc + psc_neuro * is_psc
+  i_neuro_g := nsc_neuro * ig_nsc + psc_neuro * ig_psc
+  tot_neuro_s := i_neuro_s + ds_neuro
+  tot_neuro_g := i_neuro_g + dg_neuro
+  tot_neuro := i_neuro_s + i_neuro_g
+"
+````
+
+\newpage
+
+\begin{center}
+\textbf{References}
+\end{center}
+\bigskip
+
+
+
+
+
+
+
+

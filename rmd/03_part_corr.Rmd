@@ -1,0 +1,297 @@
+---
+title: "Effects of self-compassion on PTG and PTST"
+author: "[Corrado Caudek](https://ccaudek.github.io/)"
+date: "First version 2020-01-12. Last modified `r format(Sys.time(), '%Y-%m-%d')`"
+output:
+  html_document:
+    toc: true
+    number_sections: false
+    fig_caption: true
+---
+
+# Aim
+
+Compute the partial correlations as in Table 1 of Muris, Otgaar & Pfattheicher (2019).
+
+
+# Prelims
+
+```{r prelims, echo=FALSE}
+library("here")
+suppressPackageStartupMessages(library("lavaan"))
+suppressPackageStartupMessages(library("tidyverse"))
+suppressPackageStartupMessages(library("ggthemes"))
+suppressPackageStartupMessages(library("tidyverse"))
+suppressPackageStartupMessages(library("tidyr"))
+suppressPackageStartupMessages(library("mice"))
+suppressPackageStartupMessages(library("corrplot"))
+suppressPackageStartupMessages(library("bayesplot"))
+suppressPackageStartupMessages(library("nonnest2"))
+suppressPackageStartupMessages(library("semPlot"))
+suppressPackageStartupMessages(library("ppcor"))
+
+
+theme_set(bayesplot::theme_default(base_family = "sans", base_size=14))
+options(max.print = 99999999)
+```
+
+```{r, echo=FALSE}
+# Functions
+source(here("libraries", "self_compassion_fnc.R"))
+```
+
+```{r read_data}
+# Read data
+temp <- read.csv(
+  file = here("data", "processed", "rescue_workers.csv"),
+  header = TRUE,
+  sep = ";"
+)
+```
+
+```{r wrangling, warning=FALSE, message=FALSE, echo=FALSE}
+# Data wrangling
+
+# remove uninformative variable
+temp$is_rescue_worker <- NULL
+
+# remove missing data on all questionnaires data (for convenience,
+# I use the variable 'friends')
+mydata <- temp[!is.na(temp$friends), ]
+# summary(mydata)
+
+# Multiple imputation 
+
+# MI for age.
+# select only the numeric columns of 'temp1'
+nums <- unlist(lapply(mydata, is.numeric))
+dat_num <- mydata[, nums]
+
+# one value of 'years_experience' is miscoded: 2011;
+# it will be recoded as NA and the multiply imputed and
+# added again to the 'mydata' data.frame
+dat_num$years_experience <- ifelse(
+  dat_num$years_experience == 2011, NA, dat_num$years_experience
+)
+
+imp <- mice(
+  dat_num,
+  method = "midastouch",
+  m = 1,
+  maxit = 1,
+  seed = 12345
+)
+
+d_imp <- complete(imp)
+# summary(dat_num$age)
+# summary(d_imp$age)
+
+# add imputed 'age' to mydata
+mydata$age_imp <- d_imp$age
+mydata$years_experience <- d_imp$years_experience
+
+# mydata$life_appreciation <- d_imp$life_appreciation
+# mydata$new_possibilities <- d_imp$new_possibilities
+# mydata$personal_strength <- d_imp$personal_strength
+# mydata$spirituality_changes <- d_imp$spirituality_changes
+# mydata$interpersonal_relationships <- d_imp$interpersonal_relationships
+
+if (0) ggplot(data = mydata, aes(new_possibilities)) +
+  geom_histogram(
+    aes(y = ..density..),
+    # breaks=seq(0, 85, by = 2),
+    col = "red",
+    fill = "green",
+    alpha = .2
+  ) +
+  geom_density(col = 2)
+
+# mydata$ptg <- mydata$life_appreciation + mydata$new_possibilities +
+#   mydata$personal_strength + mydata$spirituality_changes +
+#   mydata$interpersonal_relationships
+
+rm(d_imp, dat_num, temp)
+
+# Data wrangling 
+
+# Compute total score for MSPSS
+mydata$mspss <- mydata$family + mydata$friends + mydata$significant_other
+
+# Recode rate of activity as a numeric variable
+mydata$activity_rate <- as.numeric(
+  as.character(fct_recode(
+    mydata$rate_of_activity,
+    "5" = "Più di 1 turno a settimana",
+    "4" = "1 turno a settimana",
+    "3" = "1 turno ogni due settimane",
+    "2" = "1 turno al mese",
+    "1" = "Meno di 1 turno al mese"
+  ))
+)
+
+# Recode education as a numeric variable
+mydata$edu <- as.numeric(
+  as.character(fct_recode(
+    mydata$education,
+    "1" = "Scuola media primaria",
+    "2" = "Diploma",
+    "3" = "Laurea breve",
+    "4" = "Laurea magistrale",
+    "5" = "Dottorato"
+  ))
+)
+
+# Recode last_training as a numeric variable
+mydata$training_time <- as.numeric(
+  as.character(fct_recode(
+    mydata$last_training,
+    "1" = "Meno di 2 mesi fa",
+    "2" = "Più di 2 mesi fa",
+    "3" = "Meno di 6 mesi fa",
+    "4" = "Più di 6 mesi fa",
+    "5" = "Meno di 1 anno fa",
+    "6" = "Più di 1 anno fa"
+  ))
+)
+
+mydata$job_qualification <- fct_recode(
+  mydata$job_qualification,
+  "Soccorritore" = "Infermiere",
+  "Soccorritore" = "Medico"
+)
+
+df <- mydata %>%
+  drop_na(ptg)
+
+df <- df %>%
+  mutate(
+    spirituality_changes = spirituality_changes * 3
+  )
+
+df <- df %>% 
+  dplyr::rename_all(
+    dplyr::recode, 
+    avoiding = "avoidance",
+    intrusivity = "intrusion",
+    iperarousal = "hyperarousal"
+)
+```
+
+
+```{r}
+df$ptss <- df$avoidance + df$intrusion + df$hyperarousal
+df$nsc <-  df$self_judgment + df$isolation + df$over_identification
+df$psc <- df$self_kindness + df$common_humanity + df$mindfulness
+```
+
+
+
+```{r}
+mydata <- data.frame(
+  # neuroticism = df$neuroticism,
+  negative_affect = df$negative_affect,
+  self_reproach = df$self_reproach,
+  ptg = df$ptg,
+  ptss = df$ptss, 
+  nsc = df$nsc,
+  psc = df$psc
+)
+```
+
+
+# Partial correlations
+
+```{r}
+print(cor(mydata), 2)
+```
+
+```{r}
+ppcor::pcor(mydata)
+```
+
+
+Partial correlation between negative affect and nsc, given psc:
+```{r}
+fm1 <- lm(negative_affect ~ psc, data = df)
+fm2 <- lm(nsc ~ psc, data = df)
+cor.test(fm1$res, fm2$res)
+```
+
+Partial correlation between negative affect and psc, given nsc:
+```{r}
+fm3 <- lm(negative_affect ~ nsc, data = df)
+fm4 <- lm(psc ~ nsc, data = df)
+cor.test(fm3$res, fm4$res)
+```
+
+
+Partial correlation between self reproach and nsc, given psc:
+```{r}
+fm5 <- lm(self_reproach ~ psc, data = df)
+fm6 <- lm(nsc ~ psc, data = df)
+cor.test(fm5$res, fm6$res)
+```
+
+Partial correlation between self reproach and psc, given nsc:
+```{r}
+fm7 <- lm(self_reproach ~ nsc, data = df)
+fm8 <- lm(psc ~ nsc, data = df)
+cor.test(fm7$res, fm8$res)
+```
+
+
+
+Partial correlation between ptss and nsc, given psc:
+```{r}
+fm9 <- lm(ptss ~ psc, data = df)
+fm10 <- lm(nsc ~ psc, data = df)
+cor.test(fm9$res, fm10$res)
+```
+
+Partial correlation between ptss and psc, given nsc:
+```{r}
+fm11 <- lm(ptss ~ nsc, data = df)
+fm12 <- lm(psc ~ nsc, data = df)
+cor.test(fm11$res, fm12$res)
+```
+
+
+Partial correlation between ptg and nsc, given psc:
+```{r}
+fm13 <- lm(ptg ~ psc, data = df)
+fm14 <- lm(nsc ~ psc, data = df)
+cor.test(fm13$res, fm14$res)
+```
+
+Partial correlation between ptg and psc, given nsc:
+```{r}
+fm15 <- lm(ptg ~ nsc, data = df)
+fm16 <- lm(psc ~ nsc, data = df)
+cor.test(fm15$res, fm16$res)
+```
+
+
+
+Partial correlation between mpss and nsc, given psc:
+```{r}
+fm17 <- lm(mspss ~ psc, data = df)
+fm18 <- lm(nsc ~ psc, data = df)
+cor.test(fm17$res, fm18$res)
+```
+
+
+Partial correlation between mpss and psc, given nsc:
+```{r}
+fm19 <- lm(mspss ~ nsc, data = df)
+fm20 <- lm(psc ~ nsc, data = df)
+cor.test(fm19$res, fm20$res)
+```
+
+
+
+
+
+
+
+
+

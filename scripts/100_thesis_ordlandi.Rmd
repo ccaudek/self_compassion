@@ -1,0 +1,1410 @@
+---
+title: "Self-compassion, post-traumatic growth, and PTSD"
+author: "[Corrado Caudek](https://ccaudek.github.io/)"
+date: "Last modified `r format(Sys.time(), '%Y-%m-%d')`"
+fontsize: 11pt
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+always_allow_html: yes
+---
+
+# Motivation
+
+Self-compassion (SC) has been proposed as a protective factor against PTSD and a factor promoting PTG.
+
+One limit of these studies, however, is that they have often been performed in student populations, that is, in samples in which, supposedly, PTSD and PTG are only present in mild forms, if ever.
+
+Moreover, in recent years, the role of SC has been questioned. For example, Muris, Otgaar and Pfattheicher (2019) maintain that SC is strongly associated with (reversed) Negative Affect and that, once the negative component of SC is removed, the added value of positive SC is marginal.
+
+Furthermore, Geiger, Pfattheicher, Hartung, Weiss, Schindler, and Wilhelm (2018) have  questioned the fact that SC is a construct that does not overlap with Neuroticism. Once Neuroticism is controlled, there is no evidence of a specific contribution of SC.
+
+The purpose of the present study is to evaluate the hypotheses of Muris et al. (2019) and of Geiger et al. (2018) in a sample of rescue workers.
+
+
+# Prelims 
+
+```{r}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  strip.white = TRUE
+)
+
+library("here")
+suppressPackageStartupMessages(library("lavaan"))
+suppressPackageStartupMessages(library("brms"))
+suppressPackageStartupMessages(library("tidyverse"))
+library("ggthemes")
+suppressPackageStartupMessages(library("viridis"))
+library("tidyr")
+suppressPackageStartupMessages(library("mice"))
+suppressPackageStartupMessages(library("corrplot"))
+suppressPackageStartupMessages(library("bayesplot"))
+suppressPackageStartupMessages(library("semPlot"))
+suppressPackageStartupMessages(library("rio"))
+suppressPackageStartupMessages(library("outForest"))
+suppressPackageStartupMessages(library("semTools"))
+suppressPackageStartupMessages(library("semoutput"))
+suppressPackageStartupMessages(library("isotree"))
+
+options(max.print = 99999999)
+
+source(here("libraries", "self_compassion_fnc.R"))
+```
+
+
+```{r}
+temp <- readRDS(here("data", "processed", "rescue_workers_cleaned_data.rds"))
+clean_dat <- temp %>% 
+  dplyr::filter(age_imp > 20)
+```
+
+
+```{r}
+psych::describe(clean_dat)
+```
+
+
+Because of kurtosis for a sub-scale of PTG, robust estimation procedure with the Satorra-Bentler corrections were used. 
+
+
+```{r}
+hist(clean_dat$spirituality_changes)
+```
+
+# Model 0 
+
+M0 hypothesizes no effect of self-compassion. 
+
+```{r}
+model0 <- "
+  # measurement model
+  
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+          personal_strength + spirituality_changes + 
+          interpersonal_relationships
+  
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ social_support + avoiding_strategies + 
+          positive_attitude + problem_orientation + 
+          transcendent_orientation
+  
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  sc =~ self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  # regressions
+  ptgr ~ cope + soc  
+  ptss ~ cope + soc 
+  
+  sc ~~ neuro
+  soc ~~ cope
+  soc ~~ sc
+  soc ~~ neuro
+  cope ~~ sc
+  cope ~~ neuro
+
+  self_judgment ~~ self_kindness
+  # spirituality_changes ~~ transcendent_orientation
+  "
+```
+
+
+
+# Fit
+
+```{r}
+fit0 <- lavaan::sem(
+  model0,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+
+```{r}
+summary(
+  fit0,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+
+
+# Model 1 
+
+M1 hypothesizes that both PTG and PTSD are affected by coping strategies, by social support and by self-compassion. M1 does not distinguish between the two components of self-compassion. Modification indices suggest to add a residual correlation between spirituality_changes and transcendent_orientation.
+
+```{r}
+model1 <- "
+  # measurement model
+  
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+          personal_strength + spirituality_changes + 
+          interpersonal_relationships
+  
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ social_support + avoiding_strategies + 
+          positive_attitude + problem_orientation + 
+          transcendent_orientation
+  
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  sc =~ self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  # regressions
+  ptgr ~ cope + soc + sc 
+  ptss ~ cope + soc + sc 
+  
+  sc ~~ neuro
+  soc ~~ cope
+  soc ~~ sc
+  soc ~~ neuro
+  cope ~~ sc
+  cope ~~ neuro
+
+  self_judgment ~~ self_kindness
+  # spirituality_changes ~~ transcendent_orientation
+  "
+```
+
+
+
+# Fit
+
+```{r}
+fit1 <- lavaan::sem(
+  model1,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+```{r}
+anova(fit1, fit0)
+```
+
+
+```{r}
+summary(
+  fit1,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+
+```{r}
+fitMeasures(fit1)
+```
+
+
+```{r}
+semPaths(
+  fit1, 
+  "std",
+  edge.label.cex = 0.75, 
+  curvePivot = TRUE, 
+  title = TRUE,
+  fade = FALSE
+)
+```
+
+Interpretation: the fit is bad.
+
+
+# Model 1a 
+
+M1a does not distinguish between the two components of self-compassion and consider only a subset of dimensions of coping, because Coping was poorly defined by such indicators.
+
+```{r}
+model1a <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+   
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  sc =~ self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  sc ~~ neuro
+  soc ~~ cope
+  soc ~~ sc
+  soc ~~ neuro
+  cope ~~ sc
+  cope ~~ neuro
+  
+  # regressions
+  ptgr ~ cope + soc + sc 
+  ptss ~ cope + soc + sc 
+  
+  self_judgment ~~ self_kindness
+"
+```
+
+Fit
+
+```{r}
+fit1a <- lavaan::sem(
+  model1a,
+  data = mydat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+
+```{r}
+summary(
+  fit1a,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+```{r}
+fitMeasures(fit1a)
+moreFitIndices(fit1a)
+```
+
+
+
+Interpretation: the fit is still bad: the ration between $\chi^2 / df$ is equal to `r round(1368.873 /141.000, 2)`.
+
+```{r}
+compareFit(fit1, fit1a, nested = TRUE)
+```
+
+```{r}
+anova(fit1, fit1a)
+```
+
+
+# Model 2 
+
+M2 distinguishes between the two components of self-compassion and uses only a subset of the coping dimensions to improve the fit.
+
+```{r}
+model2 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+   # + transcendent_orientation + avoiding_strategies + social_support 
+  
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  psc ~~ nsc
+  psc ~~ neuro
+  nsc ~~ neuro
+  soc ~~ cope
+  soc ~~ nsc
+  soc ~~ psc
+  soc ~~ neuro
+  cope ~~ nsc
+  cope ~~ psc
+  cope ~~ neuro
+  
+  # regressions
+  ptgr ~ cope + soc + nsc + psc 
+  ptss ~ cope + soc + nsc + psc 
+
+  self_judgment ~~ self_kindness
+  # spirituality_changes ~~ transcendent_orientation
+  
+"
+```
+
+```{r}
+fit2 <- sem(
+  model2,
+  data = mydat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+```{r}
+varTable(fit2)
+```
+
+```{r}
+summary(
+  fit2,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+
+```{r}
+fitMeasures(fit2)
+```
+
+
+```{r}
+parTable(fit2)
+```
+
+```{r}
+standardizedSolution(fit2, type = "std.all")
+```
+
+Interpretation: the fit is good: the ratio between $\chi^2 / df$ is `r round(584.17 / 136.000, 2)`.
+
+```{r}
+anova(fit1a, fit2)
+```
+
+```{r}
+compareFit(fit2, fit1a, nested = TRUE)
+```
+
+
+# Model 3 
+
+Remove the effect of the negative component of self-compassion.
+
+```{r}
+model3 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  # regressions
+  ptgr ~ cope + soc + psc 
+  ptss ~ cope + soc + psc 
+  
+  psc ~~ nsc
+  psc ~~ neuro
+  nsc ~~ neuro
+  soc ~~ cope
+  soc ~~ nsc
+  soc ~~ psc
+  soc ~~ neuro
+  cope ~~ nsc
+  cope ~~ psc
+  cope ~~ neuro
+
+  self_judgment ~~ self_kindness
+"
+```
+
+```{r}
+fit3 <- sem(
+  model3,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+```{r}
+summary(
+  fit3, 
+  standardized = TRUE, 
+  fit.measures = TRUE, 
+  rsquare = TRUE
+)
+```
+
+```{r}
+fitMeasures(fit3)
+```
+
+## Comparison between M2 and M3
+
+```{r}
+anova(fit2, fit3)
+```
+
+There is a significant loss of fit. Interpretation: the negative component of self-compassion is important.
+
+
+# Model 3a {.tabset}
+
+Remove the effect of the positive component of self-compassion.
+
+```{r}
+model3a <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  # regressions
+  ptgr ~ cope + soc + nsc 
+  ptss ~ cope + soc + nsc 
+  
+  psc ~~ nsc
+  psc ~~ neuro
+  nsc ~~ neuro
+  soc ~~ cope
+  soc ~~ nsc
+  soc ~~ psc
+  soc ~~ neuro
+  cope ~~ nsc
+  cope ~~ psc
+  cope ~~ neuro
+
+  self_judgment ~~ self_kindness
+"
+```
+
+
+```{r}
+fit3a <- sem(
+  model3a,
+  data = df,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+```{r}
+summary(
+  fit3a, 
+  standardized = TRUE, 
+  fit.measures = TRUE, 
+  rsquare = TRUE
+)
+```
+
+```{r}
+fitMeasures(fit3a)
+```
+
+The fit is good: the ratio between $\chi^2 / df$ = `r round(590.538 / 138.000 , 2)`.
+
+
+## Comparison between M2 and M3a
+
+```{r}
+anova(fit2, fit3a)
+```
+
+Interpretation: there is no loss of fit if the positive component of self-compassion is removed.
+
+
+# Model 4 {.tabset}
+
+Considering also the influence of personality factors.
+
+```{r}
+model4 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  # ffi
+  ffi =~ neuroticism + extraversion + conscientiousness +
+         openness + agreeableness 
+
+  # regressions
+  ptgr ~ cope + soc + nsc + psc + ffi
+  ptss ~ cope + soc + nsc + psc + ffi
+  # ffi ~ ptg + ptss
+  
+  psc ~~ nsc
+  psc ~~ neuro
+  nsc ~~ neuro
+  soc ~~ cope
+  soc ~~ nsc
+  soc ~~ psc
+  soc ~~ neuro
+  cope ~~ nsc
+  cope ~~ psc
+  cope ~~ neuro
+
+  self_judgment ~~ self_kindness
+  # spirituality_changes ~~ transcendent_orientation
+"
+```
+
+
+```{r}
+fit4 <- sem(
+  model4,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+```{r}
+summary(
+  fit4, 
+  standardized = TRUE, 
+  fit.measures = TRUE, 
+  rsquare = TRUE
+)
+```
+
+```{r}
+fitMeasures(fit4)
+```
+
+Models 2 and 4 are not nested, therefore a chi-square difference test is not meaningful.
+
+Also after removing openness + agreeableness, which have low loadingson ffi, the regression coefficients associated to ffi are not statistically significant. I conclude that there is no obvious effect of personality factors in the relation between self compassion and ptg and ptss.
+
+
+<!-- # Model 5 {.tabset} -->
+
+<!-- M5 considers the role of Neuroticism, together with self-compassion. -->
+
+<!-- ```{r} -->
+<!-- model5 <- " -->
+<!--   # post-traumatic growth -->
+<!--   ptgr =~ life_appreciation + new_possibilities +  -->
+<!--           personal_strength + spirituality_changes +  -->
+<!--           interpersonal_relationships -->
+
+<!--   # ptsd -->
+<!--   ptss =~ avoiding + intrusivity + iperarousal -->
+
+<!--   # coping -->
+<!--   cope =~ positive_attitude + problem_orientation  -->
+
+<!--   # perceived social support -->
+<!--   soc =~ family + friends + significant_other -->
+
+<!--   # self-compassion -->
+<!--   nsc =~ self_judgment + isolation + over_identification -->
+<!--   psc =~ self_kindness + common_humanity + mindfulness -->
+
+<!--   # neuroticism -->
+<!--   neuro =~ negative_affect + self_reproach -->
+
+<!--   # regressions -->
+<!--   ptgr ~ cope + soc + nsc + psc + neuro -->
+<!--   ptss ~ cope + soc + nsc + psc + neuro -->
+
+<!--   psc ~~ nsc -->
+
+<!--   self_judgment ~~ self_kindness -->
+<!-- " -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- fit5 <- sem( -->
+<!--   model5, -->
+<!--   data = df, -->
+<!--   estimator = "MLM", -->
+<!--   std.lv = TRUE -->
+<!-- ) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- summary( -->
+<!--   fit5,  -->
+<!--   standardized = TRUE,  -->
+<!--   fit.measures = TRUE,  -->
+<!--   rsquare = TRUE -->
+<!-- ) -->
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- fitMeasures(fit5) -->
+<!-- ``` -->
+
+<!-- The fit is good: the ratio between $\chi^2 / df$ = `round(1412.650 / 410.000, 2)`. -->
+
+
+
+
+# Model 6 
+
+A model with Neuroticism and self-compassion.
+
+```{r}
+model6 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ cope + soc + nsc + psc + neuro
+  ptss ~ cope + soc + nsc + psc + neuro
+  
+  # covariances
+  self_judgment ~~ self_kindness
+"
+```
+
+
+```{r}
+  # data = df[df$age_imp > 21 & df$rescue_worker_qualification == "Si" &
+  #             df$rate_of_activity != "Meno di 1 turno al mese", ],
+```
+
+
+
+```{r}
+fit6 <- sem(
+  model6,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+```{r}
+summary(
+  fit6, 
+  standardized = TRUE, 
+  fit.measures = TRUE, 
+  rsquare = TRUE
+)
+```
+
+```{r}
+fitMeasures(fit6)
+```
+
+
+# Model 7 
+
+Model 7 remove self-compassion from Model 6.
+
+```{r}
+model7 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptss
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+  
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # regressions
+  ptgr ~ cope + soc + neuro
+  ptss ~ cope + soc + neuro
+  
+# covariances
+  self_judgment ~~ self_kindness
+"
+```
+
+
+```{r}
+fit7 <- sem(
+  model7,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+```{r}
+summary(
+  fit7, 
+  standardized = TRUE, 
+  fit.measures = TRUE, 
+  rsquare = TRUE
+)
+```
+
+
+```{r}
+fitMeasures(fit7)
+```
+
+The fit is very good: the ratio $\chi^2 / df$ = `round(252.942 / 80.000, 2)`. All other indices of fit are excellent.
+
+
+```{r}
+semPaths(
+  fit7, 
+  "std",
+  edge.label.cex = 0.75, 
+  curvePivot = TRUE, 
+  title = TRUE,
+  fade = FALSE
+)
+```
+
+## Comparison between M6 and M7
+
+The comparison between the model with both Neuroticism and Self-Compassion (M6) and the model from which the regression effect of Self-Compassion has been removed (M7) shows that M6 provides a better fit:
+
+
+```{r}
+anova(fit6, fit7)
+```
+
+
+
+# Model 8 
+
+A model with Neuroticism but no negative component of self-compassion.
+
+```{r}
+model8 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ cope + soc + psc + neuro
+  ptss ~ cope + soc + psc + neuro
+  
+  # covariances
+  self_judgment ~~ self_kindness
+"
+```
+
+
+```{r}
+fit8 <- sem(
+  model8,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+
+```{r}
+anova(fit6, fit8)
+```
+
+```{r}
+summary(
+  fit8, 
+  standardized = TRUE, 
+  fit.measures = TRUE, 
+  rsquare = TRUE
+)
+```
+
+# Model 9 
+
+A model with Neuroticism but no positive component of self-compassion.
+
+```{r}
+model9 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ cope + soc + nsc + neuro
+  ptss ~ cope + soc + nsc + neuro
+  
+  # covariances
+  self_judgment ~~ self_kindness
+"
+```
+
+
+```{r}
+fit9 <- sem(
+  model9,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+
+```{r}
+anova(fit6, fit9)
+```
+
+
+
+# Measurement invariance
+
+
+```{r}
+model_invariance <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ cope + soc + nsc + psc + neuro
+  ptss ~ cope + soc + nsc + psc + neuro
+  
+"
+```
+
+
+```{r}
+step1_comb_mean <- lavaan::sem(
+  data = clean_dat, 
+  model = model_invariance,
+  estimator = "MLM",
+  group = "where")
+```
+
+
+```{r}
+step2_comb_mean <- lavaan::sem(
+  data=clean_dat, 
+  model=model_invariance,
+  group="where", estimator="MLM",
+  group.equal=c("loadings")
+)
+```
+
+```{r}
+step3_comb_mean <- lavaan::sem(
+  data=clean_dat, 
+  model=model_invariance,
+  group="where", 
+  estimator="MLM",
+  group.equal=c("loadings", "intercepts")
+)
+```
+
+```{r}
+step4_comb_mean <- lavaan::sem(
+  data=clean_dat, 
+  model=model_invariance,
+  group="where", estimator="MLM",
+  group.equal=c("loadings", "intercepts", "residuals")
+)
+```
+
+```{r}
+compareFit(step1_comb_mean, step2_comb_mean, step3_comb_mean, step4_comb_mean)
+```
+```{r}
+anova(step1_comb_mean, step2_comb_mean, step3_comb_mean, step4_comb_mean)
+```
+
+```{r}
+anova(step1_comb_mean, step4_comb_mean)
+```
+
+
+# Conclusion {.tabset}
+
+There are two main conclusions.
+
+- From a model that provides an adequate fit to the data, the removal of the positive component of Self-Compassion has the consequence of improving the model's fit. This result questions the contribution of the *added value* of the specific component of Self-Compassion (i.e., the positive component of SC) on the relation between PTG and PTSD. Such result is consistent with the proposal of Muris, Otgaar, and Pfattheicher (2019).  Differently from previous studies, our results show that the hypothesis of Muris et al. (2019) holds also in a sample of individuals in which PTG and PTSD play an important role (i.e., rescue workers) and not only in a student sample.
+
+- The supposed *added value* of Self-Compassion is also questioned by the comparison between M7 and M6, which shows that a model including Neuroticism provides a better fit than a model with both Neuroticism and Self-Compassion. This result is consistent with the proposal of Geiger et al. (2018).
+
+Together, our results strongly questioned the role of Self-Compassion as a protective factor against PTSD and promoting PTG.
+
+
+# Research Question 10
+## Is a mediation model adequate for the effect of Self-Compassion on PTG and PTSD?
+
+Shame and Depressive Symptoms: Self-compassion and Contingent Self-worth as Mediators?
+Huaiyu Zhang, Erika R. Carr, Amanda G. Garcia-Williams, Asher E. Siegelman, Danielle Berke, Larisa V. Niles-Carnes, Bobbi Patterson, Natalie N. Watson-Singleton & Nadine J. Kaslow 
+Journal of Clinical Psychology in Medical Settings volume 25, pages 408--419 (2018) 
+
+Perfectionism, (self-)compassion, and subjective well-being: A mediation model
+JoachimStoeberAneta V.LalovaEllen J.Lumley
+Personality and Individual Differences
+Volume 154, 1 February 2020, 109708
+
+Self-compassion as mediator between coping and social anxiety in late adolescence: A longitudinal analysis
+Catrinel A.Ștefan
+Journal of Adolescence
+Volume 76, October 2019, Pages 120-128
+
+
+
+```{r}
+mod_med_1 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ g1*cope + g2*soc + g3*neuro
+  ptss ~ t1*cope + t2*soc + t3*neuro
+  
+  psc ~ p1*cope + p2*soc + p3*neuro
+  nsc ~ n1*cope + n2*soc + n3*neuro
+  
+  ptgr ~ dg1*psc + dg2*nsc
+  ptss ~ dt1*psc + dt2*nsc
+  
+  # covariances
+  psc ~~ nsc
+  soc ~~ cope
+  soc ~~ neuro
+  cope ~~ neuro
+
+  self_judgment ~~ self_kindness
+  
+  # indirect effect 
+  ip_g := (p1*dg1 + p1*dg2) + (p2*dg1 + p2*dg2) + (p3*dg1 + p3*dg2) 
+  in_g := (n1*dg1 + n1*dg2) + (n2*dg1 + n2*dg2) + (n3*dg1 + n3*dg2) 
+  i_g  := ip_g + in_g
+
+  ip_t := (p1*dt1 + p1*dt2) + (p2*dt1 + p2*dt2) + (p3*dt1 + p3*dt2) 
+  in_t := (n1*dt1 + n1*dt2) + (n2*dt1 + n2*dt2) + (n3*dt1 + n3*dt2) 
+  i_t  := ip_t + in_t
+  
+  # total effect
+  tot_g := g1 + g2 + g3 + i_g
+  tot_t := t1 + t2 + t3 + i_t
+  
+"
+```
+
+```{r}
+fit10 <- sem(
+  mod_med_1,
+  data = clean_dat,
+  estimator = "ML",
+  std.lv = TRUE
+)
+```
+
+```{r}
+summary(
+  fit10, 
+  standardized = TRUE, 
+  fit.measures = TRUE, 
+  rsquare = TRUE
+)
+```
+
+
+```{r}
+mod_med_2 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ g1*cope + g2*soc + g3*psc + g4*nsc
+  ptss ~ t1*cope + t2*soc + t3*psc + t4*nsc
+  
+  neuro ~ n1*cope + n2*soc + n3*psc + n4*nsc
+
+  ptgr ~ dn1*neuro
+  ptss ~ dn2*neuro
+  
+  # covariances
+  self_judgment ~~ self_kindness
+  
+  # indirect effect 
+  i_g := n1*dn1 + n2*dn1 + n3*dn1 + n4*dn1 
+  i_t := n1*dn2 + n2*dn2 + n3*dn2 + n4*dn2 
+  
+  # total effect
+  tot_g := g1 + g2 + g3 + g4 + i_g
+  tot_t := t1 + t2 + t3 + t4 + i_t
+  
+"
+```
+
+```{r}
+fit11 <- sem(
+  mod_med_2,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+```
+
+```{r}
+summary(
+  fit11, 
+  standardized = TRUE, 
+  fit.measures = TRUE, 
+  rsquare = TRUE
+)
+```
+
+# Three components of positive self-compassion only as a mediator
+
+```{r}
+mod_med_3 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  # psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ g1*cope + g2*soc + g3*neuro
+  ptss ~ t1*cope + t2*soc + t3*neuro
+  
+  self_kindness   ~ k1*cope + k2*soc + k3*neuro
+  common_humanity ~ h1*cope + h2*soc + h3*neuro
+  mindfulness     ~ m1*cope + m2*soc + m3*neuro
+
+  ptgr ~ dir_kg*self_kindness + dir_hg*common_humanity + dir_mg*mindfulness
+  ptss ~ dir_kt*self_kindness + dir_ht*common_humanity + dir_mt*mindfulness
+  
+  # indirect effect
+  ig_k := (k1*dir_kg) + (k2*dir_kg) + (k3*dir_kg)
+  ig_h := (h1*dir_hg) + (h2*dir_hg) + (h3*dir_hg)
+  ig_m := (m1*dir_mg) + (m2*dir_mg) + (m3*dir_mg)
+  i_g  := ig_k + ig_h + ig_m
+
+  it_k := (k1*dir_kt) + (k2*dir_kt) + (k3*dir_kt)
+  it_h := (h1*dir_ht) + (h2*dir_ht) + (h3*dir_ht)
+  it_m := (m1*dir_mt) + (m2*dir_mt) + (m3*dir_mt)
+  i_t  := it_k + it_h + it_m
+
+  # total effect
+  tot_kg := dir_kg + ig_k
+  tot_hg := dir_hg + ig_h
+  tot_mg := dir_mg + ig_m
+  tot_g := dir_kg + dir_hg + dir_mg + i_g
+  
+  tot_kt := dir_kt + it_k
+  tot_ht := dir_ht + it_h
+  tot_mt := dir_mt + it_m
+  tot_t := dir_kt + dir_ht + dir_mt + i_t
+  
+"
+```
+
+```{r}
+fit12 <- sem(
+  mod_med_3,
+  data = clean_dat,
+  estimator = "ML",
+  std.lv = TRUE
+)
+```
+
+```{r}
+summary(
+  fit12, 
+  standardized = TRUE, 
+  fit.measures = TRUE, 
+  rsquare = TRUE
+)
+```
+
+
+
+
+
+# Regressions
+
+```{r}
+hist(df$ptg)
+```
+
+
+```{r}
+fm <- lm(ptg ~ gender + education + age + employment + 
+           years_experience + last_training + rate_of_activity +
+           job_qualification + is_job_qualification_invariant +
+           is_team_invariant,
+         data = df)
+
+summary(fm)
+car::Anova(fm)
+```
+
+```{r}
+car::outlierTest(fm)
+```
+
+```{r}
+car::influenceIndexPlot(fm)
+```
+
+
+```{r}
+ggResidpanel::resid_panel(fm)
+```
+
+```{r}
+boxplot(df$ptg ~ df$gender)
+```
+
+```{r}
+df$PTSD <- with(df, 1 + avoiding + intrusivity + iperarousal)
+hist(log(df$PTSD + 1))
+```
+
+
+```{r}
+fm1 <- lm(log(PTSD) ~ gender + education + age + employment + 
+           years_experience + last_training + rate_of_activity +
+           job_qualification + is_job_qualification_invariant +
+           is_team_invariant,
+         data = df)
+
+summary(fm1)
+car::Anova(fm1)
+```
+
+```{r}
+car::outlierTest(fm1)
+```
+
+```{r}
+car::influenceIndexPlot(fm1)
+```
+
+```{r}
+ggResidpanel::resid_panel(fm1)
+```
+
+
+# References
+
+Geiger, M., Pfattheicher, S., Hartung, J., Weiss, S., Schindler, S., & Wilhelm, O. (2018). Self‐Compassion as a Facet of Neuroticism? A Reply to the Comments of Neff, Tóth‐Király, and Colosimo (2018). *European Journal of Personality*, *32*(4), 393-404.
+
+Muris, P., Otgaar, H., & Pfattheicher, S. (2019). Stripping the forest from the rotten trees: compassionate self-responding is a way of coping, but reduced uncompassionate self-responding mainly reflects psychopathology. *Mindfulness*, *10*(1), 196-199.
+
+
+# Original Computing Environment {-}
+
+```{r}
+sessionInfo()
+```

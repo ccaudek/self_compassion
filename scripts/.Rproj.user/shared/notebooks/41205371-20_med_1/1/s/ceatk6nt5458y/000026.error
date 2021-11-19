@@ -1,0 +1,1 @@
+{"frames":[{"character_number":0,"end_character_number":0,"end_line_number":0,"file":"","func":"source(source(here(\"04_import_data.R\")))","line_number":0},{"character_number":0,"end_character_number":0,"end_line_number":0,"file":"","func":"readLines(file, warn = FALSE)","line_number":0}],"message":"Error in readLines(file, warn = FALSE) : 'con' is not a connection\n"}

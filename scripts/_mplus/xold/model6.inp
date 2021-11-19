@@ -1,0 +1,25 @@
+TITLE: Not working
+
+DATA:
+FILE is  scs.dat;
+
+VARIABLE:
+NAMES ARE u1-u26 gender where;
+USEVARIABLES ARE u1-u26;
+CATEGORICAL ARE u1-u26;
+cluster is where; 
+ANALYSIS: PROCESSORS = 4;
+ROTATION = BI-GEOMIN; type = complex;
+
+MODEL:
+FG BY u1-u26*;
+FG@1;
+F1 by u1~0 u2~0 u3 u4~0 u5 u6~0 u7 u8~0 u9 u10 u11~0 u12 
+      u13~0 u14 u15 u16~0 u17 u18~0 u19 u20 u21~0 u22 u23 
+      u24~0 u25~0 u26(*1);
+F2 by u1 u2 u3 u4 u5~0 u6 u7~0 u8 u9 u10~0 u11 u12~0 u13 
+      u14~0 u15~0 u16 u17~0 u18 u19~0 u20 u21 u22~0 u23 
+      u24 u25 u26~0(*1);
+!FG WITH F1-F2@0;
+OUTPUT:
+STDYX;

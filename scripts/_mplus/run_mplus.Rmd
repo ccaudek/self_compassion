@@ -1,0 +1,108 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library("here")
+library("tidyverse")
+library("MplusAutomation")
+# library("kableExtra")
+library("gt")
+library("glue")
+library("kableExtra")
+
+the_dir <- "/Users/corrado/Dropbox/papers/self_compassion/scripts/_mplus/"
+```
+
+
+
+```{r}
+# m1: 1 factor CFA 
+m1  <- lapply(
+  1:6, 
+  function(k) {
+  lca_enum  <- mplusObject(
+      
+    TITLE = glue("C{k}_LCA_enumerate"), 
+  
+    VARIABLE = 
+      glue(
+        "categorical = x1 x2 x3 x4 x5; 
+         usevar = x1 x2 x3 x4 x5;
+         classes = c({k});"),
+  
+    ANALYSIS = 
+      "estimator = mlr; 
+       type = mixture; 
+       starts = 500 100;",
+  
+  MODEL = "",
+  OUTPUT = "",
+  
+  PLOT = 
+    "type = plot3; 
+    series = x1 x2 x3 x4 x5(*);",
+  
+  usevariables = colnames(ies_data),
+  rdata = ies_data)
+
+lca_enum_fit <- mplusModeler(lca_enum, 
+                            dataout=glue(here("enum_mplus", "c_lca_enumerate.dat")),
+                            modelout=glue(here("enum_mplus", "c{k}_lca_enumerate.inp")) ,
+                            check=TRUE, run = TRUE, hashfilename = FALSE)
+})
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+# m1: 1 factor CFA 
+runModels(paste0(the_dir, "m1_one_fact_cfa.inp"))
+summaryStats <- readModels(
+  paste0(the_dir, "m1_one_fact_cfa.out"), what="summaries")$summaries
+# print_summary_stats(summaryStats)
+
+modelResults <- 
+  readModels(paste0(the_dir, "m1_one_fact_cfa.out"))
+modelResults$parameters
+
+lambdas <- modelResults$parameters$stdyx.standardized[1:26, 3]
+item_names <- modelResults$parameters$stdyx.standardized[1:26, 2]
+
+dt <- data.frame(
+  item_names, lambdas
+) 
+```
+
+```{r}
+# dt %>% 
+#   kbl() %>%
+#   kable_paper("hover", full_width = FALSE) 
+# 
+# dt %>%
+#   arrange(item_names) %>% 
+#   kbl(caption = "Recreating booktabs style table") %>%
+#   kable_classic(full_width = FALSE)
+```
+
+```{r}
+dt %>%
+  gt() %>%
+  tab_header(
+    title = "S&P 500"
+    #subtitle = glue::glue("{start_date} to {end_date}")
+  )
+```
+
+
+

@@ -1,0 +1,313 @@
+---
+title: "Self-compassion, post-traumatic growth, and PTSD"
+subtitle: "Outlier detection"
+author: "[Corrado Caudek](https://ccaudek.github.io/)"
+date: "Last modified `r format(Sys.time(), '%Y-%m-%d')`"
+fontsize: 11pt
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+always_allow_html: yes
+---
+
+
+# Motivation
+
+The purpose of the present script is to remove the outliers according to isolation forest algorithm.
+
+
+# Prelims 
+
+```{r}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  strip.white = TRUE
+)
+
+library("here")
+suppressPackageStartupMessages(library("tidyverse"))
+library("ggthemes")
+suppressPackageStartupMessages(library("lavaan"))
+suppressPackageStartupMessages(library("brms"))
+suppressPackageStartupMessages(library("viridis"))
+library("tidyr")
+suppressPackageStartupMessages(library("mice"))
+suppressPackageStartupMessages(library("corrplot"))
+suppressPackageStartupMessages(library("bayesplot"))
+suppressPackageStartupMessages(library("semPlot")) 
+suppressPackageStartupMessages(library("rio")) 
+suppressPackageStartupMessages(library("outForest"))
+suppressPackageStartupMessages(library("semTools"))
+suppressPackageStartupMessages(library("semoutput"))
+suppressPackageStartupMessages(library("isotree"))
+
+options(max.print = 99999999)
+
+source(here("libraries", "self_compassion_fnc.R"))
+
+# Read data 
+temp <- rio::import(
+  here("data", "processed", "rescue_workers.Rds"),
+)
+
+# remove uninformative variable
+temp$is_rescue_worker <- NULL
+
+# remove missing data on all questionnaires data (for convenience,
+# I use the variable 'friends')
+mydata <- temp[!is.na(temp$friends), ]
+# summary(mydata)
+
+mydata$years_experience <- as.numeric(as.character(mydata$years_experience))
+
+# Multiple imputation
+
+# MI for age
+# select only the numeric columns of 'temp1'
+nums <- unlist(lapply(mydata, is.numeric))
+dat_num <- mydata[, nums]
+
+# one value of 'years_experience' is miscoded: 2011;
+# it will be recoded as NA and the multiply imputed and
+# added again to the 'mydata' data.frame
+dat_num$years_experience <- ifelse(
+  dat_num$years_experience == 2011, NA, dat_num$years_experience
+)
+
+imp <- mice(
+  dat_num,
+  method = "midastouch",
+  m = 1,
+  maxit = 1,
+  seed = 12345
+)
+
+d_imp <- complete(imp)
+# summary(dat_num$age)
+# summary(d_imp$age)
+
+# add imputed 'age' to mydata
+mydata$age_imp <- d_imp$age
+mydata$years_experience <- d_imp$years_experience
+
+rm(d_imp, dat_num, temp)
+
+# Data wrangling
+# Compute total score for MSPSS
+mydata$mspss <- mydata$family + mydata$friends + mydata$significant_other
+
+# Recode rate of activity as a numeric variable
+mydata$activity_rate_per_week <- as.numeric(
+  as.character(fct_recode(
+    mydata$rate_of_activity,
+    "1" = "1 turno a settimana",
+    "2" = "Più di 1 turno a settimana",
+    "0.5" = "1 turno ogni due settimane",
+    "0.25" = "1 turno al mese",
+    "0.08" = "Meno di 1 turno al mese"
+  ))
+)
+
+# Recode education as a numeric variable
+mydata$edu_years <- as.numeric(
+  as.character(fct_recode(
+    mydata$education,
+    "8" = "Scuola media primaria",
+    "13" = "Diploma",
+    "16" = "Laurea breve",
+    "18" = "Laurea magistrale",
+    "21" = "Dottorato"
+  ))
+)
+
+# Recode last_training as a numeric variable
+mydata$last_training_months <- as.numeric(
+  as.character(fct_recode(
+    mydata$last_training,
+    "1" = "Meno di 2 mesi fa",
+    "3" = "Più di 2 mesi fa",
+    "5" = "Meno di 6 mesi fa",
+    "9" = "Più di 6 mesi fa",
+    "10.5" = "Meno di 1 anno fa",
+    "18" = "Più di 1 anno fa"
+  ))
+)
+
+mydata$job_qualification <- fct_recode(
+  mydata$job_qualification,
+  "Soccorritore" = "Infermiere",
+  "Soccorritore" = "Medico"
+)
+
+df <- mydata %>%
+  drop_na(ptg)
+
+df <- df %>%
+  mutate(
+    spirituality_changes = spirituality_changes * 3
+  )
+```
+
+
+```{r}
+df <- df %>% 
+  mutate(
+    red_cross_commeetee_location = 
+      recode(red_cross_commeetee_location, 
+             `Comitato del Medio Verbano` = "Comitato di Varese",
+             `Comitato del Medio-Verbano` = "Comitato di Varese",
+             `Comitato del Agrate` = "Comitato di Monza",
+             `Comitato del Agrate Brianza` = "Comitato di Monza",
+             `Comitato di Asola` = "Comitato di Mantova",
+             `Comitato di Beragamo Hinterland` = "Comitato di Beragamo",
+             `Comitato di Beragamo hinterland` = "Comitato di Beragamo",
+             `Comitato di Bergamo Ovest e Valle Imagna` = "Comitato di Bergamo",
+             `Comitato di Bresso` = "Comitato di Milano",
+             `Comitato di Casorate Primo` = "Comitato di Pavia",
+             `Comitato di Castiglione della Pescaia` = "Comitato di Grosseto",
+             `Comitato di Cinisello balsamo` = "Comitato di Cinisello Balsamo",
+             `Comitato di Desenzano` = "Comitato di Brescia",
+             `Comitato di Empoli` = "Comitato di Firenze",
+             `Comitato di Garbagnate Milanese` = "Comitato di Milano",
+             `Comitato di Lentate Sul Seveso` = "Comitato di Monza",
+             `Comitato di Lodigiano Ovest` = "Comitato di Lodi",
+             `Comitato di Mede e Valle Lomellina` = "Comitato di Pavia",
+             `Comitato di Palazzolo sull'oglio` = "Comitato di Palazzolo sull'Oglio",
+             `Comitato di Palazzolo sull’Oglio` = "Comitato di Palazzolo sull'Oglio",
+             `Comitato di Palazzolo Sull’Oglio` = "Comitato di Palazzolo sull'Oglio",
+             `Comitato di Pistoia` = "Comitato di Firenze",
+             `Comitato di Pitigliano` = "Comitato di Grosseto",
+             `Comitato di Ponte a Egola` = "Comitato di Pisa",
+             `Comitato di Ribolla` = "Comitato di Grosseto",
+             `Comitato di Rignano sull'Arno` = "Comitato di Firenze",
+             `Comitato di San donato milanese` = "Comitato di San Donato Milanese",
+             `Comitato di San Giovanni alla Vena` = "Comitato di Pisa",
+             `Comitato di Scarlino` = "Comitato di Grosseto",
+             `Comitato di Seriate` = "Comitato di Bergamo",
+             `Comitato di Strada in Chianti` = "Comitato di Firenze",
+             `Comitato di Suvereto` = "Comitato di Livorno",
+             `Comitato di Uliveto Terme` = "Comitato di Pisa",
+             `Comitato di Valle Imagna` = "Comitato di Bergamo",
+             `Comitato di Venturina Terme` = "Comitato di Livorno",
+             `Comitato di Voghea` = "Comitato di Pavia",
+             `Comitato di Volterra` = "Comitato di Pisa",
+             `Comitato di Rosignano` = "Comitato di Firenze",
+             `Comitato Di Bresso` = "Comitato di Milano",
+             `Comitato di Beragamo` = "Comitato di Bergamo",
+             `Comitato di Bergamo hinterland` = "Comitato di Bergamo",
+             `Comitato di Agrate Brianza` = "Comitato di Monza",
+             `Comitato di Agrate` = "Comitato di Monza",
+             `Comitato di Vigevano` = "Comitato di Pavia",
+             `Comitato di San Marcello Pistoiese` = "Comitato di Firenze",
+             `Comitato di Pontasserchio` = "Comitato di Pisa",
+             `Comitato di Mortara` = "Comitato di Pavia",
+             `Comitato di Montorfano` = "Comitato di Como",
+             `Comitato di Menaggio` = "Comitato di Como",
+             `Comitato di Groane` = "Comitato di Monza",
+             `Comitato di Follonica` = "Comitato di Grosseto",
+             `Comitato di Cermenate` = "Comitato di Como",
+             `Comitato di Castelfranco di Sotto` = "Comitato di Pisa",
+             `Comitato di Buccinasco` = "Comitato di Milano",
+             `Comitato di Buccinasco` = "Comitato di Milano",
+             "Comitato di Beragamo" = "Comitato di Bergamo",
+             `Comitato di Bagni di Lucca` = "Comitato di Lucca",
+             `Comitato di Albiano Magra` = "Comitato di Firenze"
+             )
+    )
+
+df$red_cross_commeetee_location <- factor(df$red_cross_commeetee_location)
+```
+
+Select important variables.
+
+```{r}
+vars <- c(
+  # ptg
+  "life_appreciation", "new_possibilities", "personal_strength",
+  "spirituality_changes", "interpersonal_relationships",
+  # ies
+  "avoiding", "intrusivity", "iperarousal",
+  # coping
+  "social_support", "avoiding_strategies", "positive_attitude",
+  "problem_orientation", "transcendent_orientation",
+  # perceived social support
+  "family", "friends", "significant_other",
+  # self-compassion
+  "self_judgment", "isolation", "over_identification",
+  "self_kindness", "common_humanity", "mindfulness",
+  "neuroticism", "extraversion", "openness", "agreeableness", "conscientiousness",
+  "rescue_worker_qualification", 
+  "id", "where", "gender", "age_imp", "edu_years", 
+  "activity_rate_per_week", "employment", "red_cross_commeetee_location",
+  "years_experience", "last_training_months", "job_qualification",
+  "is_job_qualification_invariant", "is_team_invariant"  
+)
+
+temp1 <- df %>% 
+  dplyr::select(vars)
+```
+
+Outliers detection.
+
+```{r}
+# temp <- temp1[temp1$age_imp > 20 & 
+#                 temp1$rescue_worker_qualification == "Si" &
+#                 temp1$rate_of_activity != "Meno di 1 turno al mese", ]
+
+temp <- temp1[temp1$rescue_worker_qualification == "Si", ]
+
+as_df <- isolation.forest(temp, nthreads = 1)
+temp$anomaly_score <- predict(as_df, temp)
+```
+
+```{r}
+hist(temp$anomaly_score)
+```
+
+Remove extreme observations.
+
+```{r}
+temp$outlier <- as.factor(ifelse(temp$anomaly_score >= 0.5, "outlier", "normal"))
+
+clean_dat <- temp %>% 
+  dplyr::filter(outlier == "normal")
+```
+
+```{r}
+clean_dat[clean_dat$red_cross_commeetee_location == "Comitato di Beragamo", ]$red_cross_commeetee_location <- "Comitato di Bergamo"
+```
+
+
+```{r}
+# table(clean_dat$red_cross_commeetee_location)
+```
+
+```{r}
+temp <- clean_dat[!duplicated(clean_dat$id), ]
+clean_dat <- temp %>% 
+  dplyr::filter(age_imp > 20) 
+```
+
+```{r}
+clean_dat %>% 
+  summarise(
+    n = n()
+  )
+```
+
+
+```{r}
+saveRDS(clean_dat, here("data", "processed", "rescue_workers_for_LPA.rds"))
+```
+
+
+
+
+# Save cleaned data.
+
+```{r}
+saveRDS(clean_dat, here("data", "processed", "rescue_workers_cleaned_data.rds"))
+```
+

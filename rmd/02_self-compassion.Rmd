@@ -1,0 +1,1224 @@
+---
+title: "Effects of self-compassion on PTG and PTST"
+author: "[Corrado Caudek](https://ccaudek.github.io/)"
+date: "First version 2020-01-12. Last modified `r format(Sys.time(), '%Y-%m-%d')`"
+output:
+  html_document:
+    toc: true
+    number_sections: false
+    fig_caption: true
+---
+
+# Aim
+
+The purpose of the study is to evaluate the Self-compassion Scale (SCS) in the context of the prediction of Post-Traumatic Growth (PTG) and PTSD in a sample of rescue workers. 
+
+Recent literature has questioned the SCS by hypothesizing that the good performance of the SCS as a protective factor against various forms of psychopathy may be mainly driven by the negative component of the SCS, which is strongly associated with the personality trait of neuroticism. Therefore, it has been asked whether the positive component of the SCS adds something to a generic dimension of *negative affect*. More specifically, Pfattheicher et al. (2017) have asked whether the negative component of the SCS can be considered as completely redundant with the personality trait of neuroticism, which is widely regarded as a vulnerability marker for psychopathology (Ormel et al. 2013).
+
+Most of the previous studies which have investigated these issues have been carried out by considering samples from the general populations. It make sense to think that the effects of a protective factors are more easily examined in situations in which protective factors play an important role. For this reason, we have chosen to examine the above described issue by considering a large sample of individuals that may be considered "at risk" of developing some form of psychopathology, that is, a sample of rescue workers.
+
+Neuroticism has been identified by two item clusters of the NEO-FFI 60: Negative Affect and Self-Reproach (e.g., Gooding, Padrutt, and Pflum, 2017).
+
+
+# Prelims
+
+```{r prelims, echo=FALSE}
+library("here")
+suppressPackageStartupMessages(library("lavaan"))
+suppressPackageStartupMessages(library("tidyverse"))
+suppressPackageStartupMessages(library("ggthemes"))
+suppressPackageStartupMessages(library("tidyverse"))
+suppressPackageStartupMessages(library("tidyr"))
+suppressPackageStartupMessages(library("mice"))
+suppressPackageStartupMessages(library("corrplot"))
+suppressPackageStartupMessages(library("bayesplot"))
+suppressPackageStartupMessages(library("nonnest2"))
+suppressPackageStartupMessages(library("semPlot"))
+
+theme_set(bayesplot::theme_default(base_family = "sans", base_size=14))
+options(max.print = 99999999)
+```
+
+```{r, echo=FALSE}
+# Functions
+source(here("libraries", "self_compassion_fnc.R"))
+```
+
+```{r read_data}
+# Read data
+temp <- read.csv(
+  file = here("data", "processed", "rescue_workers.csv"),
+  header = TRUE,
+  sep = ";"
+)
+```
+
+```{r wrangling, warning=FALSE, message=FALSE, echo=FALSE}
+# Data wrangling
+
+# remove uninformative variable
+temp$is_rescue_worker <- NULL
+
+# remove missing data on all questionnaires data (for convenience,
+# I use the variable 'friends')
+mydata <- temp[!is.na(temp$friends), ]
+# summary(mydata)
+
+# Multiple imputation 
+
+# MI for age.
+# select only the numeric columns of 'temp1'
+nums <- unlist(lapply(mydata, is.numeric))
+dat_num <- mydata[, nums]
+
+# one value of 'years_experience' is miscoded: 2011;
+# it will be recoded as NA and the multiply imputed and
+# added again to the 'mydata' data.frame
+dat_num$years_experience <- ifelse(
+  dat_num$years_experience == 2011, NA, dat_num$years_experience
+)
+
+imp <- mice(
+  dat_num,
+  method = "midastouch",
+  m = 1,
+  maxit = 1,
+  seed = 12345
+)
+
+d_imp <- complete(imp)
+# summary(dat_num$age)
+# summary(d_imp$age)
+
+# add imputed 'age' to mydata
+mydata$age_imp <- d_imp$age
+mydata$years_experience <- d_imp$years_experience
+
+# mydata$life_appreciation <- d_imp$life_appreciation
+# mydata$new_possibilities <- d_imp$new_possibilities
+# mydata$personal_strength <- d_imp$personal_strength
+# mydata$spirituality_changes <- d_imp$spirituality_changes
+# mydata$interpersonal_relationships <- d_imp$interpersonal_relationships
+
+if (0) ggplot(data = mydata, aes(new_possibilities)) +
+  geom_histogram(
+    aes(y = ..density..),
+    # breaks=seq(0, 85, by = 2),
+    col = "red",
+    fill = "green",
+    alpha = .2
+  ) +
+  geom_density(col = 2)
+
+# mydata$ptg <- mydata$life_appreciation + mydata$new_possibilities +
+#   mydata$personal_strength + mydata$spirituality_changes +
+#   mydata$interpersonal_relationships
+
+rm(d_imp, dat_num, temp)
+
+# Data wrangling 
+
+# Compute total score for MSPSS
+mydata$mspss <- mydata$family + mydata$friends + mydata$significant_other
+
+# Recode rate of activity as a numeric variable
+mydata$activity_rate <- as.numeric(
+  as.character(fct_recode(
+    mydata$rate_of_activity,
+    "5" = "Più di 1 turno a settimana",
+    "4" = "1 turno a settimana",
+    "3" = "1 turno ogni due settimane",
+    "2" = "1 turno al mese",
+    "1" = "Meno di 1 turno al mese"
+  ))
+)
+
+# Recode education as a numeric variable
+mydata$edu <- as.numeric(
+  as.character(fct_recode(
+    mydata$education,
+    "1" = "Scuola media primaria",
+    "2" = "Diploma",
+    "3" = "Laurea breve",
+    "4" = "Laurea magistrale",
+    "5" = "Dottorato"
+  ))
+)
+
+# Recode last_training as a numeric variable
+mydata$training_time <- as.numeric(
+  as.character(fct_recode(
+    mydata$last_training,
+    "1" = "Meno di 2 mesi fa",
+    "2" = "Più di 2 mesi fa",
+    "3" = "Meno di 6 mesi fa",
+    "4" = "Più di 6 mesi fa",
+    "5" = "Meno di 1 anno fa",
+    "6" = "Più di 1 anno fa"
+  ))
+)
+
+mydata$job_qualification <- fct_recode(
+  mydata$job_qualification,
+  "Soccorritore" = "Infermiere",
+  "Soccorritore" = "Medico"
+)
+
+df <- mydata %>%
+  drop_na(ptg)
+
+df <- df %>%
+  mutate(
+    spirituality_changes = spirituality_changes * 3
+  )
+
+df <- df %>% 
+  dplyr::rename_all(
+    dplyr::recode, 
+    avoiding = "avoidance",
+    intrusivity = "intrusion",
+    iperarousal = "hyperarousal"
+)
+```
+
+
+```{r}
+df %>% 
+  summarise(
+    m_ies = mean(ies, na.rm = TRUE),
+    std_ies = sd(ies, na.rm = TRUE)
+  )
+```
+
+
+
+# Check for outliers
+
+```{r}
+tmp <- df %>%
+  dplyr::select(
+    life_appreciation, new_possibilities,
+    personal_strength, spirituality_changes,
+    interpersonal_relationships,
+    avoidance, intrusion, hyperarousal,
+    social_support, avoiding_strategies,
+    positive_attitude, problem_orientation,
+    transcendent_orientation,
+    family, friends, significant_other,
+    self_judgment, isolation, over_identification,
+    self_kindness, common_humanity, mindfulness
+  )
+
+d2mydata <- psych::outlier(tmp, cex=.6, bad=5)
+```
+
+Remove 1 extreme observation.
+
+```{r}
+df <- df[-c(680), ]
+```
+
+
+# Model 1
+
+M1 includes a *single compoment for self-compassion* (i.e., it does not distinguish between positive and negative self-compassion).
+
+```{r}
+M1 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # Posttraumatic Stress Syndrome (PTSS)
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*social_support + avoiding_strategies + 
+          positive_attitude + problem_orientation + 
+          transcendent_orientation
+          
+  # self-compassion
+  sc =~ NA*self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  sc   ~~ 1*sc
+
+  # regressions
+  ptg  ~ cope + soc + sc 
+  ptss ~ cope + soc + sc 
+"
+```
+
+Fit of M1.
+
+```{r}
+fit1 <- lavaan::sem(
+  M1,
+  data = df
+)
+```
+
+```{r}
+summary(
+  fit1,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+Fit indices are inadequate:
+```{r}
+fitMeasures(fit1, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+```{r}
+semPaths(
+  fit1, 
+  curvePivot = FALSE, 
+  what = "std", 
+  title = FALSE, 
+  residuals = FALSE
+)
+```
+
+Examine modification indices.
+```{r}
+modificationindices(
+  fit1,
+  minimum.value = 20
+) # only print MIs > 20
+```
+
+The indicators `avoiding_strategies` and `transcendent_orientation` are not significant and have very high modification indices. Therefore, Model 2 removes `avoiding_strategies`, `transcendent_orientation`, and `social_support`.
+
+
+# Model 2
+
+```{r}
+M2 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # Posttraumatic Stress Syndrome (PTSS)
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation # + avoiding_strategies
+  
+  # self-compassion
+  sc =~ NA*self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+        
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  sc   ~~ 1*sc
+  
+  # regressions
+  ptg  ~ cope + soc + sc 
+  ptss ~ cope + soc + sc 
+"
+```
+
+Fit of M2.
+```{r}
+fit2 <- lavaan::sem(
+  M2,
+  data = df
+)
+```
+
+Models comparison:
+```{r}
+vuongtest(fit1, fit2)
+```
+
+The models M1 and M2 are not nested. Therefore, they cannot be compared with a likelihood-ratio test. Not-nested models can be compared with the Vuong test. The Vuong test has two components. The *variance test* determine whether the models are distinguishable in the focal population. The *non-nested likelihood ratio test* provides a comparison between the fit of the two models.
+
+In the present case, the Vuong test indicates that the changes that had been introduced produce an improve of fit, but the fit is still not adequate.
+
+```{r}
+fitMeasures(fit2, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+```{r}
+semPaths(
+  fit2, 
+  curvePivot = FALSE, 
+  what = "std", 
+  title = FALSE, 
+  residuals = FALSE
+)
+```
+
+
+# Model 3
+
+M3 distinguishes between the two (correlated) components of self-compassion: positive and negative self-compassion.
+
+```{r}
+M3 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation # + avoiding_strategies
+  
+  # self-compassion
+  nsc =~ NA*self_judgment + isolation + over_identification
+  psc =~ NA*self_kindness + common_humanity + mindfulness
+  
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # regressions
+  ptg  ~ cope + soc + nsc + psc 
+  ptss ~ cope + soc + nsc + psc 
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  nsc  ~~ 1*nsc
+  psc  ~~ 1*psc
+  
+  # covariances
+  psc ~~ nsc
+"
+```
+
+Fit of M3.
+```{r}
+fit3 <- lavaan::sem(
+  M3,
+  data = df
+)
+```
+
+```{r}
+fitMeasures(fit3, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+Fit indices improves and now they are adequate.
+```{r}
+anova(fit2, fit3)
+```
+
+```{r}
+semPaths(
+  fit3, 
+  curvePivot = FALSE, 
+  what = "std", 
+  title = FALSE, 
+  residuals = FALSE
+)
+```
+
+
+# Model 5
+
+M5 is the same as M3, but it adds a covariance between two residual components of self-compassion: `self_judgment ~~ self_kindness`:
+
+```{r}
+M5 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation # + avoiding_strategies
+
+  # self-compassion
+  nsc =~ NA*self_judgment + isolation + over_identification
+  psc =~ NA*self_kindness + common_humanity + mindfulness
+
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # regressions
+  ptg  ~ cope + soc + nsc + psc 
+  ptss ~ cope + soc + nsc + psc 
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  nsc  ~~ 1*nsc
+  psc  ~~ 1*psc
+  
+  # covariances
+  psc ~~ nsc
+  self_judgment ~~ self_kindness
+"
+```
+
+Fit of M5.
+
+```{r}
+fit5 <- lavaan::sem(
+  M5,
+  data = df
+)
+```
+
+The fit improves: 
+
+```{r}
+vuongtest(fit3, fit5)
+```
+
+```{r}
+semPaths(
+  fit5, 
+  curvePivot = FALSE, 
+  what = "std", 
+  title = FALSE, 
+  residuals = FALSE
+)
+```
+
+```{r}
+summary(
+  fit5,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+```{r}
+fitMeasures(fit5, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+If we look at the regression coefficients, we see that all coefficients for the arrows pointing toward PTG are significant, with the exception of Cope.
+For Negative self-compassion, we have a direct effect of -0.185, and for Positive self-compassion the effect is 0.173. Perceived social support: 0.159. For the three variables, these effects are small (although comparable with what found in the literature) and all approximately of the same size.
+
+If we consider the regression effects on PTSS, threre is only one significant effect: negative self-compassion, with a negative sign.  
+
+
+# Model 6
+
+M6 is the same as M5, but we remove the positive components of self-compassion:
+
+```{r}
+M6 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation 
+
+  # self-compassion
+  nsc =~ NA*self_judgment + isolation + over_identification
+
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # regressions
+  ptg  ~ cope + soc + nsc  
+  ptss ~ cope + soc + nsc  
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  nsc  ~~ 1*nsc
+
+  # covariances
+  self_judgment ~~ self_kindness
+"
+```
+
+Fit of M6.
+
+```{r}
+fit6 <- lavaan::sem(
+  M6,
+  data = df
+)
+```
+
+```{r}
+vuongtest(fit5, fit6)
+```
+
+The fit improves: 
+
+```{r}
+fitMeasures(fit6, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+
+# Model 7
+
+M7 is the same as M5, but we remove the negative components of self-compassion:
+
+```{r}
+M7 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation 
+
+  # self-compassion
+  psc =~ NA*self_kindness + common_humanity + mindfulness
+
+
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # regressions
+  ptg  ~ cope + soc + psc  
+  ptss ~ cope + soc + psc  
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  psc  ~~ 1*psc
+
+  # covariances
+  self_judgment ~~ self_kindness
+"
+```
+
+Fit of M7.
+
+```{r}
+fit7 <- lavaan::sem(
+  M7,
+  data = df
+)
+```
+
+```{r}
+vuongtest(fit6, fit7)
+```
+
+If we compare the models which include either the positive or the negative components of self-compassion alone, then the Vuong test indicates that the two models produce the same fit to the data. This indicates that, in our sample, we found no evidence that the negative component of the self-compassion is more important than the positive component, or the other way around. The data suggest that they are both on the same level.
+
+
+
+# Model 8
+
+"Pfattheicher and colleagues argue the negative items of the Self-compassion Scale (SCS), which represent reduced uncompassionate self-responding, are redundant with neuroticism (especially its depression and anxiety facets) and do not evidence incremental validity in predicting life satisfaction" (Neff, Toth-Kiraly, and  Colosimo, 2018). Neff et al. (2018) conclude that "although self-compassion overlaps with neuroticism, the two constructs are distinct".
+
+We evaluate this conclusion by adding Neuroticism to model M5.
+
+```{r}
+M8 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation # + avoiding_strategies
+  
+  # self-compassion
+  nsc =~ NA*self_judgment + isolation + over_identification
+  psc =~ NA*self_kindness + common_humanity + mindfulness
+  
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # neuroticism
+  neuroticism =~ NA*negative_affect + self_reproach
+
+  # regressions
+  ptg  ~ cope + soc + nsc + psc + neuroticism
+  ptss ~ cope + soc + nsc + psc + neuroticism
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  nsc  ~~ 1*nsc
+  psc  ~~ 1*psc
+  neuroticism ~~ 1*neuroticism
+  
+  # covariances
+  psc ~~ nsc
+  self_judgment ~~ self_kindness
+"
+```
+
+```{r}
+M8a <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation + avoiding_strategies
+  
+  # self-compassion
+  nsc =~ NA*self_judgment + isolation + over_identification
+  psc =~ NA*self_kindness + common_humanity + mindfulness
+  
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # neuroticism
+  # neuroticism =~ NA*negative_affect + self_reproach
+  neuroticism =~ NA*i1_na + i2_na + i3_na + i4_na + i5_na +
+                 i1_sr + i2_sr + i3_sr + i4_sr + i5_sr + 
+                 i6_sr + i7_sr 
+
+  # regressions
+  ptg  ~ cope + soc + nsc + psc + neuroticism
+  ptss ~ cope + soc + nsc + psc + neuroticism
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  nsc  ~~ 1*nsc
+  psc  ~~ 1*psc
+  neuroticism ~~ 1*neuroticism
+  
+  # covariances
+  psc ~~ nsc
+  self_judgment ~~ self_kindness
+"
+```
+
+Fit of M8.
+
+```{r}
+fit8 <- lavaan::sem(
+  M8,
+  data = df
+)
+```
+
+```{r}
+fitMeasures(fit8, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+If I fit the model with Neuroticism having 12 indicators (model M8a), rather than two subscales, then the fit is worse:
+
+   chisq       df      cfi      tli    rmsea     srmr 
+1464.453  412.000    0.912    0.901    0.057    0.058 
+`
+
+```{r}
+vuongtest(fit5, fit8)
+```
+
+In the comparison M5 and M8, the model M5 (without Nevroticism) wins: The presence of both Neuroticism and Self-compassion produces a fit that is worse than the fit of the model with only Self-compassion.
+
+
+# Model 9
+
+The same as M8, but with only the positive component of self-compassion (`nsc` is removed).
+
+```{r}
+M9 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation 
+  
+  # self-compassion
+  psc =~ NA*self_kindness + common_humanity + mindfulness
+  
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # neuroticism
+  neuroticism =~ NA*negative_affect + self_reproach
+
+  # regressions
+  ptg  ~ cope + soc + psc + neuroticism
+  ptss ~ cope + soc + psc + neuroticism
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  psc  ~~ 1*psc
+  neuroticism ~~ 1*neuroticism
+  "
+```
+
+Fit of M9.
+
+```{r}
+fit9 <- lavaan::sem(
+  M9,
+  data = df
+)
+```
+
+```{r}
+fitMeasures(fit9, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+```{r}
+vuongtest(fit8, fit9)
+```
+
+Better fit, in a model including Neuroticism, with only the positive component of self-compassion than with both components of self-compassion.
+
+
+# Model 10
+
+The same as M8, but with only the negative component of self-compassion (`psc` is removed).
+
+```{r}
+M10 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation 
+  
+  # self-compassion
+  nsc =~ NA*self_judgment + isolation + over_identification
+
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # neuroticism
+  neuroticism =~ NA*negative_affect + self_reproach
+
+  # regressions
+  ptg  ~ cope + soc + nsc + neuroticism
+  ptss ~ cope + soc + nsc + neuroticism
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  nsc  ~~ 1*nsc
+  neuroticism ~~ 1*neuroticism
+"
+```
+
+Fit of M10.
+
+```{r}
+fit10 <- lavaan::sem(
+  M10,
+  data = df
+)
+```
+
+```{r}
+fitMeasures(fit10, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+```{r}
+vuongtest(fit8, fit10)
+```
+
+```{r}
+vuongtest(fit9, fit10)
+```
+Better fit, in a model including Neuroticism, with only the negative component of self-compassion than with both components of self-compassion.
+
+
+# Model 11
+
+The model M11 removes both components of self-compassion: The exogenous variables are Neuroticism, Coping, and Perceived Social Support.
+
+```{r}
+M11 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptss
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation # + avoiding_strategies 
+
+  
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # neuroticism
+  neuroticism =~ NA*negative_affect + self_reproach
+
+  # regressions
+  ptg  ~ cope + soc + neuroticism
+  ptss ~ cope + soc + neuroticism
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  neuroticism ~~ 1*neuroticism
+
+"
+```
+
+Fit of M11.
+
+```{r}
+fit11 <- lavaan::sem(
+  M11,
+  data = df
+)
+```
+
+
+```{r}
+fitMeasures(fit11, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+```{r}
+residuals(fit11, type="cor")
+```
+
+```{r}
+hist(as.numeric(flatten(residuals(fit11, type="cor"))))
+```
+
+```{r}
+inspect(fit11, "rsquare")
+```
+
+Let's compare the models with either the two components of self-compassion, or Neuroticism.
+```{r}
+vuongtest(fit5, fit11)
+```
+
+The model including Neuroticism fits better that the model with the two components of self-compassion.
+
+```{r}
+summary(
+  fit11,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+```{r}
+semPaths(
+  fit11, 
+  curvePivot = FALSE, 
+  what = "std", 
+  title = FALSE, 
+  residuals = TRUE
+)
+```
+
+
+# Model 12
+
+Self-compassion as a moderator
+
+```{r}
+M12 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptss
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation + avoiding_strategies
+  
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # neuroticism
+  neuroticism =~ NA*negative_affect + self_reproach
+  
+  # self-compassion
+  nsc =~ NA*self_judgment + isolation + over_identification
+  psc =~ NA*self_kindness + common_humanity + mindfulness
+
+  # regressions
+  
+  ptg  ~ psc + nsc
+  ptss ~ psc + nsc
+  psc  ~ cope + soc + neuroticism
+  nsc  ~ cope + soc + neuroticism
+  ptg  ~ cope + soc + neuroticism
+  ptss ~ cope + soc + neuroticism
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  neuroticism ~~ 1*neuroticism
+  psc  ~~ 1*psc
+  nsc  ~~ 1*nsc
+  
+  # covariances
+  psc ~~ nsc
+  self_judgment ~~ self_kindness
+"
+```
+
+Fit of M12.
+
+```{r}
+fit12 <- lavaan::sem(
+  M12,
+  data = df
+)
+```
+
+```{r}
+fitMeasures(fit12, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+```{r}
+vuongtest(fit11, fit12)
+```
+
+The model with self-compassion as moderator produces a worst fit than the model without this moderator.
+
+```{r}
+summary(
+  fit12,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+
+# Model 13
+
+Neef suggests to adapt a bifactor model to the self-compassion scale. Therefore, we consider a bifactor model for self-compassion, together with Neuroticism.
+
+```{r}
+M13 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation 
+  
+  # self-compassion: bifactor 
+  nsc =~ NA*self_judgment + isolation + over_identification
+  psc =~ NA*self_kindness + common_humanity + mindfulness
+  sc  =~ NA*self_kindness + common_humanity + mindfulness +
+         self_judgment + isolation + over_identification
+  
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # neuroticism
+  neuroticism =~ NA*negative_affect + self_reproach
+
+  # regressions
+  ptg  ~ cope + soc + nsc + psc + neuroticism
+  ptss ~ cope + soc + nsc + psc + neuroticism
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  nsc  ~~ 1*nsc
+  psc  ~~ 1*psc
+  sc   ~~ 1*sc
+  neuroticism ~~ 1*neuroticism
+  
+  # covariances
+  psc ~~ 0*nsc
+  sc  ~~ 0*nsc
+  sc  ~~ 0*psc
+  self_judgment ~~ self_kindness
+"
+```
+
+Fit of M13.
+
+```{r}
+fit13 <- lavaan::sem(
+  M13,
+  data = df
+)
+```
+
+```{r}
+fitMeasures(fit13, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+```{r}
+summary(
+  fit13,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+
+A first comparison is between the model with the two components of self-compassion and Nevroticism (plus coping and perceived social support) and the model with the bifactor structure of self-compassion and Nevroticism (plus coping and perceived social support).
+
+```{r}
+vuongtest(fit8, fit13)
+```
+This comparison indicates that the bifactor structure fits better the self-compassion scale.
+
+A second comparison is between the model with the bifactor structure of self-compassion, Nevroticis, Coping, and Perceived social support as exogenous variables, and the model in which self-compassion is excluded.
+
+```{r}
+vuongtest(fit11, fit13)
+```
+The results indicate that the model *without* self-compassion fits better.
+
+
+# Model 14
+
+Bifactor model for the self-compassion scale, without considering Neuroticism. With self_judgment ~~ self_kindness, the model does not converge; without, the fit is bad. 
+
+```{r}
+M14 <- "
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # coping
+  cope =~ NA*positive_attitude + problem_orientation 
+  
+  # self-compassion: bifactor 
+  nsc =~ NA*self_judgment + isolation + over_identification
+  psc =~ NA*self_kindness + common_humanity + mindfulness
+  sc  =~ NA*self_kindness + common_humanity + mindfulness +
+         self_judgment + isolation + over_identification
+  
+  # perceived social support
+  soc =~ NA*family + friends + significant_other
+  
+  # regressions
+  ptg  ~ cope + soc + nsc + psc 
+  ptss ~ cope + soc + nsc + psc 
+  
+  # fix variance of latent factors
+  ptg  ~~ 1*ptg
+  ptss ~~ 1*ptss
+  cope ~~ 1*cope
+  soc  ~~ 1*soc
+  nsc  ~~ 1*nsc
+  psc  ~~ 1*psc
+  sc   ~~ 1*sc
+  
+  # covariances
+  psc ~~ 0*nsc
+  sc  ~~ 0*nsc
+  sc  ~~ 0*psc
+  # self_judgment ~~ self_kindness
+"
+```
+
+Fit of M14.
+
+```{r}
+fit14 <- lavaan::sem(
+  M14,
+  data = df
+)
+```
+
+```{r}
+fitMeasures(fit14, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+```{r}
+summary(
+  fit14,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+
+
+
+
+# Conclusion
+
+Self-compassion does not improve the prediction of PTG and PTSD in a sample of rescue workers when the model includes Nevroticism.
+Pfattheicher and colleagues have argued that the negative items of the Self-compassion Scale (SCS), which represent reduced uncompassionate self-responding, are redundant with neuroticism and do not provide evidence of incremental validity in predicting life satisfaction. We find that this conclusion applies to both components of the SCS, not only to the negative component of the SCS, when considering the validity of predicting PTG and PTSD.
+
+
+

@@ -1,0 +1,49 @@
+Mplus VERSION 8.5 (Mac)
+MUTHEN & MUTHEN
+02/26/2021   3:05 PM
+
+INPUT INSTRUCTIONS
+
+  TITLE: 6 factor bi-factor CFA.
+  DATA:
+    FILE IS scs.dat;
+  VARIABLE:
+    NAMES ARE u1-u26 gender where;
+    MISSING ARE ALL(-9);
+    USEVARIABLES ARE u1-u26;
+    CATEGORICAL ARE u1-u26;
+    GROUPING IS where(0 = toscana 1 = lombardia)
+  ANALYSIS:
+    ROTATION = target (oblique);
+    ESTIMATOR IS WLSMV; !MLR;
+    CONVERGENCE = 0.00001;
+  MODEL:
+    FG BY u1-u26(*1);
+    F1 by u1~0 u2~0 u3 u4~0 u5 u6~0 u7 u8~0 u9 u10 u11~0 u12
+        u13~0 u14 u15 u16~0 u17 u18~0 u19 u20 u21~0 u22 u23
+        u24~0 u25~0 u26(*1);
+    F2 by u1 u2 u3 u4 u5~0 u6 u7~0 u8 u9 u10~0 u11 u12~0 u13
+        u14~0 u15~0 u16 u17~0 u18 u19~0 u20 u21 u22~0 u23
+        u24 u25 u26~0(*1);
+    !FG WITH F1-F2 @0;
+
+  OUTPUT: STDYX;
+
+*** ERROR
+  Group TOSCANA has 0 observations.
+*** WARNING
+  Data set contains unknown or missing values for GROUPING,
+  PATTERN, COHORT, CLUSTER and/or STRATIFICATION variables.
+  Number of cases with unknown or missing values:  182
+
+
+MUTHEN & MUTHEN
+3463 Stoner Ave.
+Los Angeles, CA  90066
+
+Tel: (310) 391-9971
+Fax: (310) 391-8971
+Web: www.StatModel.com
+Support: Support@StatModel.com
+
+Copyright (c) 1998-2020 Muthen & Muthen

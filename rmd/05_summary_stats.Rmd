@@ -1,0 +1,621 @@
+---
+title: "Summary statistics and mediational models"
+subtitle: "Self-compassion project"
+author: "[Corrado Caudek](https://ccaudek.github.io/)"
+date: "First version 2020-01-12. Last modified `r format(Sys.time(), '%Y-%m-%d')`"
+output:
+  html_document:
+    toc: true
+    number_sections: false
+    fig_caption: true
+---
+
+# Aim
+
+Compute the summary statistics of the sample used in the self-compassion project.
+
+
+# Prelims
+
+```{r prelims, echo=FALSE}
+library("here")
+suppressPackageStartupMessages(library("lavaan"))
+suppressPackageStartupMessages(library("tidyverse"))
+suppressPackageStartupMessages(library("ggthemes"))
+suppressPackageStartupMessages(library("tidyverse"))
+suppressPackageStartupMessages(library("tidyr"))
+suppressPackageStartupMessages(library("mice"))
+suppressPackageStartupMessages(library("corrplot"))
+suppressPackageStartupMessages(library("bayesplot"))
+suppressPackageStartupMessages(library("nonnest2"))
+suppressPackageStartupMessages(library("semPlot"))
+suppressPackageStartupMessages(library("ppcor"))
+suppressPackageStartupMessages(library("skimr"))
+
+theme_set(bayesplot::theme_default(base_family = "sans", base_size=14))
+options(max.print = 99999999)
+```
+
+```{r, echo=FALSE}
+# Functions
+source(here("libraries", "self_compassion_fnc.R"))
+```
+
+```{r read_data}
+# Read data
+temp <- read.csv(
+  file = here("data", "processed", "rescue_workers.csv"),
+  header = TRUE,
+  sep = ";"
+)
+```
+
+```{r wrangling, warning=FALSE, message=FALSE, echo=FALSE}
+# Data wrangling
+
+# remove uninformative variable
+temp$is_rescue_worker <- NULL
+
+# remove missing data on all questionnaires data (for convenience,
+# I use the variable 'friends')
+mydata <- temp[!is.na(temp$friends), ]
+# summary(mydata)
+
+# Multiple imputation 
+
+# MI for age.
+# select only the numeric columns of 'temp1'
+nums <- unlist(lapply(mydata, is.numeric))
+dat_num <- mydata[, nums]
+
+# one value of 'years_experience' is miscoded: 2011;
+# it will be recoded as NA and the multiply imputed and
+# added again to the 'mydata' data.frame
+dat_num$years_experience <- ifelse(
+  dat_num$years_experience == 2011, NA, dat_num$years_experience
+)
+
+imp <- mice(
+  dat_num,
+  method = "midastouch",
+  m = 1,
+  maxit = 1,
+  seed = 12345
+)
+
+d_imp <- complete(imp)
+# summary(dat_num$age)
+# summary(d_imp$age)
+
+# add imputed 'age' to mydata
+mydata$age_imp <- d_imp$age
+mydata$years_experience <- d_imp$years_experience
+
+# mydata$life_appreciation <- d_imp$life_appreciation
+# mydata$new_possibilities <- d_imp$new_possibilities
+# mydata$personal_strength <- d_imp$personal_strength
+# mydata$spirituality_changes <- d_imp$spirituality_changes
+# mydata$interpersonal_relationships <- d_imp$interpersonal_relationships
+
+if (0) ggplot(data = mydata, aes(new_possibilities)) +
+  geom_histogram(
+    aes(y = ..density..),
+    # breaks=seq(0, 85, by = 2),
+    col = "red",
+    fill = "green",
+    alpha = .2
+  ) +
+  geom_density(col = 2)
+
+# mydata$ptg <- mydata$life_appreciation + mydata$new_possibilities +
+#   mydata$personal_strength + mydata$spirituality_changes +
+#   mydata$interpersonal_relationships
+
+rm(d_imp, dat_num, temp)
+
+# Data wrangling 
+
+# Compute total score for MSPSS
+mydata$mspss <- mydata$family + mydata$friends + mydata$significant_other
+
+# Recode rate of activity as a numeric variable
+mydata$activity_rate <- as.numeric(
+  as.character(fct_recode(
+    mydata$rate_of_activity,
+    "5" = "Più di 1 turno a settimana",
+    "4" = "1 turno a settimana",
+    "3" = "1 turno ogni due settimane",
+    "2" = "1 turno al mese",
+    "1" = "Meno di 1 turno al mese"
+  ))
+)
+
+# Recode education as a numeric variable
+mydata$edu <- as.numeric(
+  as.character(fct_recode(
+    mydata$education,
+    "1" = "Scuola media primaria",
+    "2" = "Diploma",
+    "3" = "Laurea breve",
+    "4" = "Laurea magistrale",
+    "5" = "Dottorato"
+  ))
+)
+
+# Recode last_training as a numeric variable
+mydata$training_time <- as.numeric(
+  as.character(fct_recode(
+    mydata$last_training,
+    "1" = "Meno di 2 mesi fa",
+    "2" = "Più di 2 mesi fa",
+    "3" = "Meno di 6 mesi fa",
+    "4" = "Più di 6 mesi fa",
+    "5" = "Meno di 1 anno fa",
+    "6" = "Più di 1 anno fa"
+  ))
+)
+
+mydata$job_qualification <- fct_recode(
+  mydata$job_qualification,
+  "Soccorritore" = "Infermiere",
+  "Soccorritore" = "Medico"
+)
+
+df <- mydata %>%
+  drop_na(ptg)
+
+df <- df %>%
+  mutate(
+    spirituality_changes = spirituality_changes * 3
+  )
+
+df <- df %>% 
+  dplyr::rename_all(
+    dplyr::recode, 
+    avoiding = "avoidance",
+    intrusivity = "intrusion",
+    iperarousal = "hyperarousal"
+)
+```
+
+
+```{r}
+df$ptss <- df$avoidance + df$intrusion + df$hyperarousal
+df$nsc <-  df$self_judgment + df$isolation + df$over_identification
+df$psc <- df$self_kindness + df$common_humanity + df$mindfulness
+```
+
+
+
+```{r}
+thedat <- data.frame(
+  # neuroticism = df$neuroticism,
+  negative_affect = df$negative_affect,
+  self_reproach = df$self_reproach,
+  ptg = df$ptg,
+  ptss = df$ptss, 
+  nsc = df$nsc,
+  psc = df$psc
+)
+```
+
+
+# Correlations
+
+Winders et al. (2020) reports that 
+
+> of the studies that reported correlational data about the relationship between self-compassion and PTSD (defined using DSM-IV or DSM-5 criteria; n = 14), five reported a strong, significant negative relationship, six studies reported a moderate, significant negative relationship and two a weak, significant negative relationship. Only one study reported no significant relationship.
+
+```{r}
+print(cor(thedat), 2)
+```
+
+There is a negative correlation between Negative Self-Compassion and IES-R; no correlation between IES-R and the positive component of self-compassion.
+
+```{r}
+cor.test(thedat$ptss, thedat$nsc)
+```
+
+
+```{r}
+cor.test(thedat$ptss, thedat$psc)
+```
+
+
+# PTSD: Mediational models with coping as a mediating variable
+
+
+> Ten of the papers employed mediational analysis to explore the relationships between self-compassion, trauma and PTSD. One study found a significant direct relationship between self-compassion and PTSD (Bistricky et al., 2017) and four studies found indirect relationships via interpersonal competence (Bistricky et al., 2017), emotional dysregulation (Barlow et al., 2017), self‐blame attributions and disengagement coping (Hamrick & Owens, 2018) and grief ruminations (Lenferink et al., 2017). -- Winders et al. (2020)
+
+```{r}
+mediation_an_1 <- function(d) {
+  
+  set.seed(1234)
+  
+  d <- d %>% 
+    dplyr::rename(
+      X = x,
+      Y = y,
+      M = m
+    )
+  
+  mediation_model <- ' 
+    # direct effect
+    Y ~ c*X
+    
+    # mediator
+    M ~ a*X
+    Y ~ b*M
+    
+    # indirect effect (a*b)
+    ab := a*b
+    
+    # total effect
+    total := c + (a*b)
+  '
+  
+  fit <- sem(mediation_model, data = d)
+  fit
+}
+```
+
+
+## Negative self-compassion
+
+```{r}
+d <- data.frame(
+  x = df$nsc, 
+  m = df$cope_nvi,  # df$positive_attitude + df$problem_orientation,  
+  y = df$ptss
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+## Positive self-compassion
+
+
+```{r}
+d <- data.frame(
+  x = df$psc, 
+  m = df$cope_nvi, 
+  y = df$ptss
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+
+# PTSD: Mediational models with self-compassion as a mediating variable
+
+
+```{r}
+d <- data.frame(
+  x = df$cope_nvi, 
+  m = df$nsc,    
+  y = df$ptss
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+
+```{r}
+d <- data.frame(
+  x = df$cope_nvi, 
+  m = df$psc,    
+  y = df$ptss
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+
+# PTSD: Self-compassion and social support
+
+> Some studies also looked at the mediating effects of self-compassion, finding that it partially mediated relationships between: social support and PTSD (Maheux & Price, 2016)
+
+
+## Negative self-compassion
+
+```{r}
+d <- data.frame(
+  x = df$social_support, 
+  m = df$nsc,    
+  y = df$ptss
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+## Positive self-compassion
+
+```{r}
+d <- data.frame(
+  x = df$social_support, 
+  m = df$psc,    
+  y = df$ptss
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+
+
+# PTG: Mediational models with coping as a mediating variable
+
+
+## Negative self-compassion
+
+```{r}
+d <- data.frame(
+  x = df$nsc, 
+  m = df$cope_nvi,  # df$positive_attitude + df$problem_orientation,  
+  y = df$ptg
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+## Positive self-compassion
+
+
+```{r}
+d <- data.frame(
+  x = df$psc, 
+  m = df$cope_nvi, 
+  y = df$ptg
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+
+# PTG: Mediational models with self-compassion as a mediating variable
+
+
+```{r}
+d <- data.frame(
+  x = df$cope_nvi, 
+  m = df$nsc,    
+  y = df$ptg
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+
+```{r}
+d <- data.frame(
+  x = df$cope_nvi, 
+  m = df$psc,    
+  y = df$ptg
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+
+# PTG: Self-compassion and social support
+
+
+## Negative self-compassion
+
+```{r}
+d <- data.frame(
+  x = df$social_support, 
+  m = df$nsc,    
+  y = df$ptg
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+## Positive self-compassion
+
+```{r}
+d <- data.frame(
+  x = df$social_support, 
+  m = df$psc,    
+  y = df$ptg
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_1(d)
+summary(m)
+```
+
+
+
+
+
+
+
+
+# Add Nevroticism to the previous models
+
+```{r}
+# W: Neuroticism
+mediation_an_2 <- function(d) {
+  
+  set.seed(1234)
+  
+  d <- d %>% 
+    dplyr::rename(
+      X = x,
+      Y = y,
+      W = w,
+      M = m
+    )
+  
+  mediation_model <- ' 
+    # direct effect
+    Y ~ c*X
+    Y ~ d*W
+    
+    # mediator
+    M ~ a*X
+    Y ~ b*M
+    M ~ e*W
+    
+    # indirect effect (a*b)
+    ab := a*b 
+    eb := e*b
+    
+    # total effect
+    total := c + (a*b) 
+    total2 := d + (e*b)
+    
+  '
+  
+  fit <- sem(mediation_model, data = d)
+  fit
+}
+```
+
+## Negative self-compassion and Neuroticism
+
+```{r}
+d <- data.frame(
+  x = df$nsc, 
+  w = df$neuroticism,
+  m = df$cope_nvi,  # df$positive_attitude + df$problem_orientation,  
+  y = df$ptss
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_2(d)
+summary(m)
+```
+
+## Positive self-compassion and Neuroticism
+
+```{r}
+d <- data.frame(
+  x = df$psc, 
+  w = df$neuroticism,
+  m = df$cope_nvi,  # df$positive_attitude + df$problem_orientation,  
+  y = df$ptss
+)
+d <- d[complete.cases(d), ]
+
+print(cor(d), 3)
+
+m <- mediation_an_2(d)
+summary(m)
+```
+
+
+
+
+
+```{r}
+
+M5 <- ' 
+
+  # ptsd
+  ptss =~ NA*avoidance + intrusion + hyperarousal
+  
+  # post-traumatic growth
+  ptg =~ NA*life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # self-compassion
+  nsc =~ NA*self_judgment + isolation + over_identification
+  psc =~ NA*self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuroticism =~ NA*negative_affect + self_reproach
+  
+  # variances
+  ptg ~~ 1* ptg
+  psc ~~ 1* psc
+  nsc ~~ 1* nsc
+  neuroticism ~~ 1* neuroticism
+  ptss ~~ 1* ptss
+  
+  # regression
+  ptg  ~ NA*avoiding_strategies + positive_attitude + problem_orientation + nsc + psc + neuroticism
+  ptss ~ NA*avoiding_strategies + positive_attitude + problem_orientation + nsc + psc + neuroticism
+  avoiding_strategies ~ NA*psc + nsc + neuroticism
+  positive_attitude   ~ NA*psc + nsc + neuroticism
+  problem_orientation ~ NA*psc + nsc + neuroticism
+  
+'
+```
+
+```{r}
+fit5 <- lavaan::sem(
+  M5,
+  data = df
+)
+```
+
+
+```{r}
+summary(
+  fit5,
+  standardized = TRUE,
+  fit.measures = TRUE,
+  rsquare = TRUE
+)
+```
+
+```{r}
+fitMeasures(fit5, c("chisq", "df", "cfi", "tli", "rmsea", "srmr"))
+```
+
+
+
+
+
+

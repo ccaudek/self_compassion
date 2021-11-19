@@ -1,0 +1,20 @@
+TITLE: 2-factor CFA.
+
+DATA:
+  FILE IS scs.dat;
+
+VARIABLE:
+  NAMES ARE u1-u26;
+  MISSING ARE ALL(-9);
+  USEVARIABLES ARE u1-u26;
+  CATEGORICAL ARE u1-u26;
+
+ANALYSIS:
+  ESTIMATOR = WLSMV;
+  ROTATION = TARGET;
+
+MODEL:
+  F1 BY u1 u8 u11 u16 u21 u4 u13 u18 u25 u2 u6 u20 u24;
+  F2 BY u5 u12 u19 u23 u26 u3 u7 u10 u15 u9 u14 u17 u22;
+  
+OUTPUT: standardized;

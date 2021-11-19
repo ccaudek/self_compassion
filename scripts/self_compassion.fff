@@ -1,0 +1,16 @@
+\begin{figure*}[hbt]
+\ifnextchar[{\eatarg}{}
+
+\centering
+\includegraphics{self_compassion_files/figure-latex/semplot-1.pdf}
+\caption{\label{fig:semplot}Direct effects of self-compassion to post-traumatic growth (\texttt{ptg}) and PTST (\texttt{pts}). \texttt{cop} = coping, \texttt{soc} = perceived social support, \texttt{nsc} = negative self compassion, \texttt{psc} = positive self compassion, \texttt{ner} = nevroticism.}
+\end{figure*}
+\efloatseparator
+ 
+\begin{figure*}[hbt]
+\ifnextchar[{\eatarg}{}
+
+\centering
+\includegraphics{self_compassion_files/figure-latex/mediation-model-1.pdf}
+\caption{\label{fig:mediation-model}Structural component of a SEM model with the positive and negative components of self-compassion as mediators between coping, perceived social support, and neuroticism, as exogeneous variables, and post-traumatic growth (\texttt{ptg}) and PTST (\texttt{pts}), as endogeneous variables. \texttt{cop} = coping, \texttt{soc} = perceived social support, \texttt{nsc} = negative self compassion, \texttt{psc} = positive self compassion, \texttt{ner} = nevroticism.}
+\end{figure*}

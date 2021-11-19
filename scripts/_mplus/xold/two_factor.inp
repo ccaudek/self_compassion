@@ -1,0 +1,11 @@
+TITLE: 2-factor CFA with categorical indicator variables.
+DATA:
+  FILE = SCS_20210224.csv;
+VARIABLE:
+  NAMES = u1-u26 gender where;
+  MISSING = ALL (-9);
+  USEVARIABLES = u1-u26;
+ANALYSIS: 
+MODEL:
+  F1 BY u1-u26;
+OUTPUT: STDXY;

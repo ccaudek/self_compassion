@@ -1,0 +1,50 @@
+TITLE: Bifactor-CFA (1 G- and 6 S-factors).
+
+DATA:
+  FILE IS selfcompassionitems.dat;
+
+VARIABLE:
+  NAMES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 
+            scsk23 scoi24 scis25 scsk26; 
+  MISSING ARE ALL(-9);
+  USEVARIABLES ARE scsj1 scoi2 scch3 scis4 scsk5 scoi6 scch7 scsj8 
+            scmi9 scch10 scsj11 scsk12 scis13 scmi14 scch15 
+            scsj16 scmi17 scis18 scsk19 scoi20 scsj21 scmi22 
+            scsk23 scoi24 scis25 scsk26; 
+  CATEGORICAL ARE all;
+
+ANALYSIS:
+  ! Requesting the weighted least squares mean- and variance-adjusted estimator
+  ESTIMATOR = WLSMV;
+  ROTATION = target;
+  
+MODEL:
+  sc BY scsk5* scsk12 scsk19 scsk23 scsk26 scsj1 scsj8 scsj11 
+        scsj16 scsj21 scch3 scch7 scch10 scch15 scis4 scis13 
+        scis18 scis25 scmi9 scmi14 scmi17 scmi22 scoi2 scoi6 
+        scoi20 scoi24;
+  sk BY scsk5* scsk12 scsk19 scsk23 scsk26; 
+  sj BY scsj1* scsj8 scsj11 scsj16 scsj21;
+  ch BY scch3* scch7 scch10 scch15;
+  is BY scis4* scis13 scis18 scis25;
+  mi BY scmi9* scmi14 scmi17 scmi22; 
+  oi BY scoi2* scoi6 scoi20 scoi24;
+  sc@1; 
+  sj@1; 
+  oi@1; 
+  ch@1; 
+  sk@1; 
+  mi@1; 
+  is@1;
+  sc WITH sk-oi@0; 
+  sk WITH sj-oi@0; 
+  sj WITH ch-oi@0; 
+  ch WITH is-oi@0; 
+  is WITH mi-oi@0; 
+  mi WITH oi@0;
+  
+! Requesting standardized parameter estimates
+OUTPUT: stdyx;
+

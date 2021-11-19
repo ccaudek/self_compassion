@@ -1,0 +1,1148 @@
+---
+title             : "Effects of self-compassion on post-traumatic growth and PTSD"
+shorttitle        : "Construct validity of SCS"
+author:
+  - name          : "Corrado Caudek"
+    affiliation   : "1"
+    corresponding : yes
+    address       : "NEUROFARBA Department, Psychology Section, University of Firenze, Italy"
+    email         : "ccaudek@unifi.it"
+  - name          : "Celeste Berti"
+    affiliation   : "1"
+  - name          : "Claudio Sica"
+    affiliation   : "2"
+  - name          : "Ilaria Colpizzi"
+    affiliation   : "1"
+affiliation:
+  - id            : "1"
+    institution   : "NEUROFARBA Department, Psychology Section, University of Florence, Italy"
+  - id            : "2"
+    institution   : "Health Sciences Department, Psychology Section, University of Florence, Italy"
+authornote: |
+  Add complete departmental affiliations for each author here. Each new line herein must be indented, like this line.
+  Enter author note here.
+abstract: |
+  One or two sentences providing a **basic introduction** to the field,  comprehensible to a scientist in any discipline.
+  
+  Two to three sentences of **more detailed background**, comprehensible  to scientists in related disciplines.
+  
+  One sentence clearly stating the **general problem** being addressed by  this particular study.
+  
+  One sentence summarizing the main result (with the words "**here we show**" or their equivalent).
+  
+  Two or three sentences explaining what the **main result** reveals in direct comparison to what was thought to be the case previously, or how the  main result adds to previous knowledge.
+  
+  One or two sentences to put the results into a more **general context**.
+  
+  Two or three sentences to provide a **broader perspective**, readily comprehensible to a scientist in any discipline.
+  
+  
+  <!-- https://tinyurl.com/ybremelq -->
+keywords          : "keywords"
+wordcount         : "`r wordcountaddin::word_count()`"
+bibliography      : ["self-compassion.bib"]
+floatsintext      : yes
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+linenumbers       : yes
+mask              : no
+draft             : no
+csl               : "apa7.csl"
+documentclass     : "apa7"
+classoption       : "man"
+output            : 
+  papaja::apa6_pdf:
+    includes:
+      after_body: "appendix.tex"
+    latex_engine: "xelatex"
+    extra_dependencies: ["xcolor"]
+editor_options: 
+  chunk_output_type: inline
+  markdown: 
+    wrap: sentence
+header-includes:
+  - \usepackage{rotating}
+  - \DeclareDelayedFloatFlavor{sidewaysfigure}{figure}  
+  - \DeclareDelayedFloatFlavor{sidewaystable}{table}
+  - \usepackage{pdflscape}                                
+  - \DeclareDelayedFloatFlavor{landscape}{table}   
+  - \raggedbottom 
+  - \usepackage{xcolor,makecell,array}
+  - \usepackage{graphicx}
+  - \usepackage{placeins}
+  - \setlength{\parskip}{0pt plus 0pt minus 0pt}
+  - \usepackage{multirow}
+  - \usepackage{setspace}
+  - \usepackage{booktabs}
+  - \usepackage{tabularx}
+  - \usepackage{caption}
+  - \usepackage{color, colortbl}
+---
+
+```{r setup, include = FALSE}
+library(pacman)
+p_load(tidyverse, papaja, psych, scales, lavaan, gridExtra, install = FALSE) 
+r_refs("r-references.bib")
+```
+
+```{r analysis-preferences}
+# Seed for random number generation
+set.seed(42)
+knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
+```
+
+```{r}
+# -- R code --
+suppressPackageStartupMessages(library("here"))
+suppressPackageStartupMessages(library("lavaan"))
+suppressPackageStartupMessages(library("brms"))
+suppressPackageStartupMessages(library("tidyverse"))
+library("ggthemes")
+suppressPackageStartupMessages(library("viridis"))
+library("tidyr")
+suppressPackageStartupMessages(library("mice"))
+suppressPackageStartupMessages(library("corrplot"))
+suppressPackageStartupMessages(library("bayesplot"))
+suppressPackageStartupMessages(library("semPlot"))
+suppressPackageStartupMessages(library("rio"))
+suppressPackageStartupMessages(library("outForest"))
+suppressPackageStartupMessages(library("semTools"))
+suppressPackageStartupMessages(library("semoutput"))
+suppressPackageStartupMessages(library("isotree"))
+suppressPackageStartupMessages(library("tidySEM"))
+suppressPackageStartupMessages(library("nonnest2"))
+suppressPackageStartupMessages(library("papaja"))
+suppressPackageStartupMessages(library("MplusAutomation"))
+
+source(here("libraries", "self_compassion_fnc.R"))
+```
+
+```{r}
+temp <- readRDS(here("data", "processed", "rescue_workers_cleaned_data.rds"))
+clean_dat <- temp %>% 
+  dplyr::filter(age_imp > 20)
+```
+
+# Introduction
+
+Self-compassion is a construct derived from the Buddhist tradition and has been conceptualized by @neff2003development as motivation to adopt a compassionate mindset towards themselves in order to prevent suffering of self and others.
+Self-compassion (SC) has been proposed as a protective factor against psychopathology, including PTSD, and as a factor promoting PTG (ref).
+
+The SC construct is typically assessed with the Self-Compassion Scale (SCS), a 26 item self-report scale [@neff2003development].
+The SCS items span six dimensions of the construct.
+Three sub-sets of items are indicators of compassionate self-responding: (a) being kind and understanding toward one's fallibility, (b) acknowledging that personal failures and pain are something that everyone experiences, and (c) having a mindful awareness of one's painful thoughts and feelings.
+The remaining three sub-sets of items are indicators of the negation of uncompassionate self-responding: (a) being critical and not understanding toward personal shortcomings, (b) having the tendency of isolating from others, and (c) avoiding one's painful thoughts and feelings or overidentifying with them.
+The SCS total score is given by the sum of the self-responding on the compassionate items and the reversely scored uncompassionate items.
+
+The construct of SC and the SCS has been extremely popular in the recent psychological literature [for a recent review, see @muris2020process].
+A measure of such success is provided, for example, by a search of the literature conducted on December 18, 2020 using "self compassion" in Topic as a search term, which yielded 2,380 results.
+However, the growing success of the SCS has not been unchallenged and questions have been raised about the validity of this scale [@muris2016protective; @muris2016protection; @muris2017protection; @muris2019stripping; @kandler2017old].
+
+@muris2020process, for example, has pointed to the fact that the common practice of considering the construct measured by the SCS as a unitary construct is problematic:
+
+> We argue that this criticism is far from trivial and seriously undermines the scientific foundation of the self-compassion concept (p. 1473).
+
+In several papers, Muris and collaborators have pointed out the fact that researchers tend to treat the SC construct as a "pure protective factor", rather than to present a more nuanced picture of SC [e.g., @gu2020development; @montero2018self; @seppala2017oxford; @strauss2016compassion] and, as a consequence of this, the data of the SCS are usually summarized in terms of the SCS total score.
+But the use of the total score is problematic for several reasons.
+For the present purposes, it is important to focus on the following two criticisms.
+
+1.  The use of the SCS total score tend to inflate the link with psychopathology. According to @muris2018good, in fact, the relations that have been found between the SCS total scores and other psychological constructs mainly depend on the uncompassionate component of the SCS. But the uncompassionate component of the SCS is strongly associated with (reversed) Negative Affect and, once the negative component of SC is removed, the added value of positive SC is marginal.
+
+<!-- 1. The use of the SCS total score tend to inflate the link with psychopathology, given that the uncompassionate features of the SCS closely resemble psychopathological symptoms.  According to @muris2018good, the relations that have been found between the SCS total scores and other psychological constructs mainly depend on the uncompassionate component of the SCS. If this is true, then it would be legitimate to conclude that the SC construct is redundant, because the uncompassionate component of the SCS is strongly associated with (reversed) Negative Affect and, once the negative component of SC is removed, the added value of positive SC is marginal. -->
+
+2.  It is not clear what, if anything, is added by the compassionate component of the SCS to the nomological network in which SC is situated. @kandler2017old have taken the extreme stance of arguing that the SC construct is redundant because it overlaps with with the personality trait of Neuroticism: Once Neuroticism is controlled, there is no evidence of a specific contribution of SC.
+
+This debate has receiving considerable attention in the recent literature on SC, because the questions that have been raised are relevant for therapeutic interventions.
+In fact, it is of interest to understand whether the association between the treatment effects and the compassionate component of SC may be obscured by the common use of the SCS total score [@wadsworth2018examining].
+
+In summary, the criticisms that have been directed towards the use of the SCS total score as a proxy for the SC construct point to the necessity of (1) distinguishing the compassionate self-responding from the uncompassionate component of the SCS, (2) evaluating the relative contribution of each of these two components, and (3) establishing whether the the compassionate self-responding has incremental value above and beyond other psychological factors currently examined in therapeutic settings, in primis the personality trait of Neuroticism.
+
+------------------------------------------------------------------------
+
+As a consequence, it has been asked whether the construct of SC (as measured by the SCS) is useful (in that it adds something new) or whether it is redundant, as it can be replaced with the personality trait of neuroticism [@kandler2017old].
+Specifically, given that the total score of the SCS is given by the sum of the indicators of the compassionate and uncompassionate components of the SCS, the question has been raised about the relative contribution of the compassionate components of SC to the total score.
+
+One limit of these studies, however, is that they have often been performed in student populations, that is, in samples in which, supposedly, PTSD and PTG are only present in mild forms.
+The purpose of the present study is to evaluate the hypotheses of @muris2019stripping and of @geiger2018self in a sample of rescue workers.
+
+Rescue workers are a population at risk for high levels of burnout and compassion fatigue.
+???
+
+Questions:
+
+-   **HP1**: Is the construct of self-compassion (SC) necessary?
+    It has been proposed that the effects of self-compassion can be due only to the negative component of SC, whereas the positive component of SC has no effect.
+    If this were true, then there would be no need of the construct of SC, given that the negative component of SC reduces to negative affect (ref).
+    To answer this question is necessary to show that the positive component of SC has an effect on other psychological constructs, beyond that of the negative component of SC.
+
+-   **HP2**: It has been argued that SC reduces to nevroticism.
+    Again, it this were true, then we would not need the separate construct of SC.
+    In order to test this hypothesis (ref) it would be necessary to show that both components of SC provide an added value in a nomological network which includes the construct of nevroticism.
+
+In the present study we tested these two hypotheses by comparing different SEM models including the folloging constructs...
+
+PTSS and PTG emerge only in individuals subjected to high load of psychological stress.
+For this reason, we examined a large sample of rescue workers.
+
+# Methods
+
+<!-- We report how we determined our sample size, all data exclusions (if any), all manipulations, and all measures in the study. <!-- 21-word solution (Simmons, Nelson & Simonsohn, 2012; retrieved from http://ssrn.com/abstract=2160588) -->
+
+## Participants
+
+## Material
+
+Specific questions for ambulance personnel were developed to investigate the role that the respondent usually covered (such as driver, team leader, rescuer, etc.), number of weekly shifts, and number of psychological support meeting (such as debriefing and defusing) every participants have requested during the last two weeks and their careers (e.g. "How often are you on ambulance duty?", and "Do you usually take shift with the same team?").
+Moreover, the researchers asked participants to tell about a traumatic event occurs during their careers, which they felt seriously affected by (e.g. "Would you mind to briefly describe a traumatic event you have experienced during your career?").
+
+Personality traits were assessed using the *NEO-Five Factor Inventory* (NEO-FFI-60; Costa & McCrae, 1992; Italian version by Caprara et al., 2001), based upon the Five Factors Model (FFM) of personality traits (McCrae & Costa, 1987).
+The NEO-FFI-60 is a 60 items self-report questionnaire that allows the assessment of five broad personality domains: Neuroticism (N), Extraversion (E), Openness to Experience (O), Agreeableness (A), and Conscientiousness (C).
+The respondent is asked to rate the items on 5-point Likert scale ranging from 0 (Strongly disagree) to 4 (Strongly agree).
+NEO-FFI showed good internal consistency, Cronbach's alpha ranging from .68 (A) to .89 (N).
+
+The coping strategies were investigated using the Italian version of the *Coping Orientation to Problem Experienced Inventory* (COPE, Carver et al., 1989; Sica et al., 2008).
+COPE is a self-report questionnaire composed by 60 items used to assess a wide range of coping strategies gathered in 15 scales: 1) active coping, 2) planning, 3) seeking instrumental social support, 4) seeking emotional social support, 5) suppression of competing activities, 6) turning to religion, 7) positive reinterpretation and growth, 8) restraint coping, 9) acceptance, 10) focus on and venting of emotions, 11) denial, 12) mental disengagement, 13) behavioral disengagement, 14) alcohol/drug use, and 15) humor.
+The scales were grouped in the following dimension: Problem focused, Avoidant coping, Social support, Emotion focused and Religion.
+The items are rated on a 4-point Likert scale ranging from 1 (I don't usually do that) to 4 (I usually do that).
+Internal consistency (Chronbach's $\alpha$) ranging from $\alpha$ = .70 to $\alpha$ = .91.
+
+The *Post-Traumatic Growth Inventory* (PTGI; Tedeschi & Calhoun, 1996; Italian version by Prati & Pietrantoni, 2006) is a 21 item self-report measure.
+PTGI evaluates the growth following one or more stressful or traumatic events in one's life.
+The item score ranging on a 7-point Likert scale, from 0 (No change) to 6 (Very important change).
+The PTGI comprises five subscales: Relation with others, New possibilities, Personal strength, Appreciation of life, and Spiritual changes.
+The Incident of Event Scale - revised (IES-R; Horowitz et al., 1979; Weiss & Marmar, 1997; Weiss, 2004) is widely used to assess the symptomatology of the Post-Traumatic Stress Disorder in rescue workers.
+IES-R is used to investigate the three symptoms of PTSD: Intrusion, Hypervigilance, and Avoidance.
+The score ranging on a 5-point Likert scale from 0 (Not at all) to 4 (Extremely).
+Each subscale showed high internal consistency (Chronbach's $\alpha$), intrusion = 0.87 to 0.94, avoidance = 0.84 to 0.97, hyperarousal = 0.79 to 0.91.
+
+Self-compassion was measured using the 26 items of the *Self-Compassion Scale* (SCS; Neff, 2003; Italian version by Veneziani et al., 2017).
+This self-report questionnaire is composed by two subscales which are divided in three component themselves: Self-Kindness, Common Humanity, and Mindfulness identified the positive subscale, while Self-Judgement, Isolation, and Overidentification the negative subscale.
+SCS score ranging on a 5-point Likert scale from 1 (Almost always) to 5 (Almost never).
+High scores of self-compassion reflect an ability to be kind and understanding toward oneself, even in difficult times.
+Internal consistency for unidimensional Self-Compassion was found of 0.92 (Neff, 2003a).
+
+TODO: reliability of the SCS with the present sample
+
+For the present sample, consistently with @neff2019examining, reliability was computed by examining a bi-factor model in which each loaded on its corresponding factor, but also on an overarching factor.
+
+Multi-dimensional Scale of Perceived Social Support (MSPSS; Zimet et al., 1988; Italian version by Prezza & Pacilli, 2002) was used to assess how participants perceived social support.
+MSPSS is a 12 items self-report questionnaire, and respondent was asked to rate their experience of perceived support from Family, Friends, and Significant Others.
+MSPSS showed an internal consistency between 0.80 and 0.95 (Ozdemir, 2019).
+
+## Procedure
+
+## Data analysis
+
+TODO
+
+<!-- We used `r cite_r("r-references.bib")` for all our analyses. -->
+
+# Results
+
+## Preliminary Analysis and Descriptive Statistics
+
+The goodness‐of‐fit was evaluated according to the Comparative Fit Index (CFI), Tucker-Lewis Index (TLI), Root Mean Square Error Approximation (RMSEA), and Standardized Root Mean Square Residual (SRMR). 
+The following cut-off criteria were used: RMSEA and SRMR near or less than 0.08, and CFI and TLI near or greater than 0.90 [@little2013longitudinal].
+All models were tested using Mplus version 8.5 [@muthen2017mplus]  using all available data.
+A weighted least squares mean- and variance-adjusted estimator (WLSMV) was used to assess each latent construct, as it is more adequate than maximum-likelihood for ordered-categorical items with five or less response options [e.g., @bandalos2014relative].
+
+
+```{r, echo=FALSE}
+the_dir <- "/Users/corrado/Dropbox/papers/self_compassion/scripts/_mplus/"
+```
+
+
+```{r, echo=FALSE, message=FALSE}
+res_m1 <- readModels(paste0(the_dir, "m1_one_fact_cfa.out"), quiet = TRUE)
+res_m2a <- readModels(paste0(the_dir, "m2a_two_fact_cfa.out"), quiet = TRUE)
+res_m2b <- readModels(paste0(the_dir, "m2b_two_fact_esem.out"), quiet = TRUE)
+res_m3a <- readModels(paste0(the_dir, "m3a_six_fact_cfa.out"), quiet = TRUE)
+res_m3b <- readModels(paste0(the_dir, "m3b_six_fact_esem.out"), quiet = TRUE)
+res_m4a <- readModels(paste0(the_dir, "m4a_bifactor_six_s_fact.out"), quiet = TRUE)
+res_m4a <- readModels(paste0(the_dir, "m4a_bifactor_six_s_fact.out"), quiet = TRUE)
+res_m4b <- readModels(paste0(the_dir, "m4b_bifactor_esem.out"), quiet = TRUE)
+res_m5a <- readModels(paste0(the_dir, "m5a_two_bifactor_cfa.out"), quiet = TRUE)
+res_m5b <- readModels(paste0(the_dir, "m5b_two_bifactor_esem.out"), quiet = TRUE)
+
+res_m6a <- readModels(paste0(the_dir, "m6a_bifacor_two_fact_cor_res.out"), quiet = TRUE)
+res_m6b <- readModels(paste0(the_dir, "m6b_bifacor_two_fact_cor_res.out"), quiet = TRUE)
+res_m7 <- readModels(paste0(the_dir, "m7_two_factor_esem_v2.out"), quiet = TRUE)
+```
+
+We started with the unidimensional CFA model, which clearly proved to be inadequate, CFI = `r res_m1$summaries$CFI`, TLI = `r res_m1$summaries$TLI`, RMSEA = `r res_m1$summaries$RMSEA_Estimate` [90% CI `r res_m1$summaries$RMSEA_90CI_LB`-`r res_m1$summaries$RMSEA_90CI_UB`], SRMR = `r res_m1$summaries$SRMR`. 
+We then considered all the factor structures for the SCS that had been discussed by @neff2019examining. The list of the examined models, together with their fit indices, is provide below:
+
+- a two-factor CFA for the positive and the negative components of SC, CFI = `r res_m2a$summaries$CFI`, TLI = `r res_m2a$summaries$TLI`, RMSEA = `r res_m2a$summaries$RMSEA_Estimate` [90% CI `r res_m2a$summaries$RMSEA_90CI_LB`-`r res_m2a$summaries$RMSEA_90CI_UB`], SRMR = `r res_m2a$summaries$SRMR`;
+
+- a two-factor ESEM, CFI = `r res_m2b$summaries$CFI`, TLI = `r res_m2b$summaries$TLI`, RMSEA = `r res_m2b$summaries$RMSEA_Estimate` [90% CI `r res_m2b$summaries$RMSEA_90CI_LB`-`r res_m2b$summaries$RMSEA_90CI_UB`], SRMR = `r res_m2b$summaries$SRMR`;
+
+- a six-factor CFA, CFI = `r res_m3a$summaries$CFI`, TLI = `r res_m3a$summaries$TLI`, RMSEA = `r res_m3a$summaries$RMSEA_Estimate` [90% CI `r res_m3a$summaries$RMSEA_90CI_LB`-`r res_m3a$summaries$RMSEA_90CI_UB`], SRMR = `r res_m3a$summaries$SRMR`;
+
+- a six-factor ESEM, CFI = `r res_m3b$summaries$CFI`, TLI = `r res_m3b$summaries$TLI`, RMSEA = `r res_m3b$summaries$RMSEA_Estimate` [90% CI `r res_m3b$summaries$RMSEA_90CI_LB`-`r res_m3b$summaries$RMSEA_90CI_UB`], SRMR = `r res_m3b$summaries$SRMR`;
+
+- a bifactor-CFA (1 G- and 6 S-factors), CFI = `r res_m4a$summaries$CFI`, TLI = `r res_m4a$summaries$TLI`, RMSEA = `r res_m4a$summaries$RMSEA_Estimate` [90% CI `r res_m4a$summaries$RMSEA_90CI_LB`-`r res_m4a$summaries$RMSEA_90CI_UB`], SRMR = `r res_m4a$summaries$SRMR`;
+
+- a bifactor-ESEM (1 G- and 6 S-factors), CFI = `r res_m4b$summaries$CFI`, TLI = `r res_m4b$summaries$TLI`, RMSEA = `r res_m4b$summaries$RMSEA_Estimate` [90% CI `r res_m4b$summaries$RMSEA_90CI_LB`-`r res_m4b$summaries$RMSEA_90CI_UB`], SRMR = `r res_m4b$summaries$SRMR`; 
+
+- a two-bifactor (two-tier) CFA model (2 G- and 6 S-factors), CFI = `r res_m5a$summaries$CFI`, TLI = `r res_m5a$summaries$TLI`, RMSEA = `r res_m5a$summaries$RMSEA_Estimate` [90% CI `r res_m5a$summaries$RMSEA_90CI_LB`-`r res_m5a$summaries$RMSEA_90CI_UB`], SRMR = `r res_m5a$summaries$SRMR`; 
+
+- a two-bifactor (two-tier) ESEM model (2 G- and 6 S-factors), CFI = `r res_m5b$summaries$CFI`, TLI = `r res_m5b$summaries$TLI`, RMSEA = `r res_m5b$summaries$RMSEA_Estimate` [90% CI `r res_m5b$summaries$RMSEA_90CI_LB`-`r res_m5b$summaries$RMSEA_90CI_UB`], SRMR = `r res_m5b$summaries$SRMR`.
+
+
+```{r, echo=FALSE}
+model_results <- readModels(paste0(the_dir, "m2a_two_fact_cfa.out"), quiet = TRUE)
+rho_pos_neg_1 <- model_results$parameters$stdyx.standardized %>% 
+  dplyr::filter(
+    paramHeader == 'NEG.WITH',
+    param == 'POS'
+  )
+```
+
+```{r, echo=FALSE}
+model_results <- readModels(paste0(the_dir, "m2b_two_fact_esem.out"), quiet = TRUE)
+rho_pos_neg_2 <- model_results$parameters$stdyx.standardized %>% 
+  dplyr::filter(
+    paramHeader == 'NEG.WITH',
+    param == 'POS'
+  )
+```
+
+```{r, echo=FALSE}
+model_results <- readModels(paste0(the_dir, "m3a_six_fact_cfa.out"), quiet = TRUE)
+
+y1 <- model_results$parameters$stdyx.standardized[27:41, 3]
+```
+
+```{r, echo=FALSE}
+model_results <- readModels(paste0(the_dir, "m3b_six_fact_esem.out"), quiet = TRUE)
+
+y2 <- model_results$parameters$stdyx.standardized[157:171, 3]
+```
+
+```{r, echo=FALSE}
+model_results <- readModels(paste0(the_dir, "m5a_two_bifactor_cfa.out"), quiet = TRUE)
+
+rho_pos_neg_3 <- model_results$parameters$stdyx.standardized %>% 
+  dplyr::filter(
+    paramHeader == 'NE.WITH',
+    param == 'PO',
+  )
+```
+
+```{r, echo=FALSE}
+model_results <- readModels(paste0(the_dir, "m5b_two_bifactor_esem.out"), quiet = TRUE)
+
+rho_pos_neg_4 <- model_results$parameters$stdyx.standardized %>% 
+  dplyr::filter(
+    paramHeader == 'NE.WITH',
+    param == 'PO',
+  )
+```
+
+For the two-factor CFA for the CS and RUS of SC, the correlation between the factors was `r rho_pos_neg_1$est`.
+For the two-factor ESEM, the correlation between the factors was `r rho_pos_neg_2$est`.
+For the 6-factor CFA, the correlations between factors ranged between `r min(y1)` and `r max(y1)`.
+For the 6-factor ESEM, the correlations between factors ranged between `r min(y2)` and `r max(y2)`.
+For the two-bifactor (two-tier) CFA model (2 G- and 6 S-factors), the correlation between the CS and RUS factors is `r rho_pos_neg_3$est`.
+For the two-bifactor (two-tier) ESEM model (2 G- and 6 S-factors), the correlation between the CS and RUS factors is `r rho_pos_neg_4$est`.
+
+The present results replicate what reported by @neff2019examining and indicate that the bifactor ESEM models (_i.e._, Models 4b and 5b in the original paper) provides the best description of the factor structure of the SC scale. In our data, both a bifactor-ESEM (1 G- and 6 S-factors) and a two-bifactor (two-tier) ESEM model (2 G- and 6 S-factors) provided an excellent adaptation to the data. Specifically, the two-bifactor (two-tier) ESEM model included 6 uncorrelated factors (self-kindness, reduced self-judgment, common humanity, reduced isolation, mindfulness, and reduced over-identification) and two correlated CS (loading on the self-kindness, common humanity, and mindfulness items) and RUS (loading on the reduced self-judgment, reduced isolation, and reduced over-identification items) factors and showed a marginally better fit than the one bifactor-ESEM (1 G- and 6 S-factors) model. What is crucial is that the models discussed by @neff2019examining, and here reproduced, include distinct factors which correspond to the six dimensions of the SCS: self-kindness, reduced self-judgment, common humanity, reduced isolation, mindfulness, and reduced over-identification. Also in the present sample, these two models, which are closer to the view that self-compassion is comprised of six components that interact as a global system [@neff2003self], provide the best fit to the data. 
+
+In the following, we present three further factor models that are not discussed by @neff2019examining. A description of the models together with their fit indices is proveded below.
+
+To start, we considered a bifactor two-factor ESEM, with correlated SC and RUS factors. This ESEM model identifies an ESEM CS factor with 13? target items for self-kindness, common humanity, and mindfulness, and a RUS factor with 13? target items for reduced self-judgment, reduced isolation, and reduced over-identification. The correlation between the CS and RUS factors was ??. A further general factor, uncorrelated with CS and RUS, saturated on all indicators. The fit indices were the following: CFI = `r res_m6a$summaries$CFI`, TLI = `r res_m6a$summaries$TLI`, RMSEA = `r res_m6a$summaries$RMSEA_Estimate` [90% CI `r res_m6a$summaries$RMSEA_90CI_LB`-`r res_m6a$summaries$RMSEA_90CI_UB`], SRMR = `r res_m6a$summaries$SRMR`.
+
+Given that the fit of such a model approximates what is considered sufficient from a psychometric point of view, the modification indexes were examined.
+Although allowing correlated indicator residuals is generally inappropriate, this issue can, in part, be alleviated if the considered indicators shows a very strong similarity in their contents. 
+As suggested by the modification indexes, we thus allowed correlated residuals between the indicators SCCH10 ("When I feel inadequate in some way, I try to remind myself that feelings of inadequacy are shared by most people") and SCCH7 ("When I'm down and out, I remind myself that there are lots of other people in the world feeling like I am"), and between indicators SCIS18 ("When I'm really struggling, I tend to feel like other people must be having an easier time of it") and SCIS13 ("When I'm feeling down, I tend to feel like most other people are probably happier than I am"). With this change, the fit indexes, although certainly worse than theose of the bifacor ESEM models with six specific factors presented by @neff2019examining (and discussed above for the present sample), reached a minimal level of psychometric adequacy: CFI = `r res_m6b$summaries$CFI`, TLI = `r res_m6b$summaries$TLI`, RMSEA = `r res_m6b$summaries$RMSEA_Estimate` [90% CI `r res_m6b$summaries$RMSEA_90CI_LB`-`r res_m6b$summaries$RMSEA_90CI_UB`], SRMR = `r res_m6b$summaries$SRMR`. 
+The correlation between the SC and RUS factors was ??.
+
+
+
+
+However, a concomitant and, perhaps, stronger support for the two-factor solution to the SCS comes from the last model, which uses a different factor extraction algorithm than the one used by @neff2019examining. 
+In practice, the loadings to the not-target ESEM indicators are allowed to be slightly larger than what is found by using the ESEM algorithm of Mplus. 
+
+
+
+
+- a two-factor ESEM with factor loadings estimated as indicated in the Supplementary Material, CFI = `r res_m7$summaries$CFI`, TLI = `r res_m7$summaries$TLI`, RMSEA = `r res_m7$summaries$RMSEA_Estimate` [90% CI `r res_m7$summaries$RMSEA_90CI_LB`-`r res_m7$summaries$RMSEA_90CI_UB`], SRMR = `r res_m7$summaries$SRMR`.
+
+The first model was motivated by an analyses of the modification indexes of the first of the last three models.
+Although allowing correlated indicator residuals is generally inappropriate, the strong similarity of the content of the two indicators might partly justify this choice in the present case.
+However, a concomitant and, perhaps, stronger support for the two-factor solution to the SCS comes from the last model, which uses a different factor extraction algorithm than the one used by @neff2019examining. 
+In practice, the loadings to the not-target ESEM indicators are allowed to be slightly larger than what is found by using the ESEM algorithm of Mplus. 
+
+
+
+## Model Testing
+
+Structural equation modeling (SEM; Arbuckle, 2010) was used to examine the current research hypotheses.
+In order to assess the model fit, the following indices were used: $\chi^2$, $\chi^2$/df index, normed fit index (NFI), comparative fit index (CFI), Tucker--Lewis index (TLI), and root-mean-square error of approximation (RMSEA).
+Model fit with NFI, CFI, and TLI was equal or greater than 0.90, RMSEA equal to or less than 0.08, and $\chi^2$/df index \< 4 are indicative of an adequate fit to the data (Hair et al., 2009; Awang, 2012).
+
+```{r}
+model0 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+          personal_strength + spirituality_changes + 
+          interpersonal_relationships
+  
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ social_support + avoiding_strategies + 
+          positive_attitude + problem_orientation + 
+          transcendent_orientation
+  
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  sc =~ self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  # regressions
+  ptgr ~ cope + soc  
+  ptss ~ cope + soc 
+
+  self_judgment ~~ self_kindness
+  "
+```
+
+```{r}
+fit0 <- lavaan::sem(
+  model0,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+
+fit_meas_m0 <- fitMeasures(
+  fit0, 
+  c("chisq", "df", "cfi", "cfi.robust", "nfi", "tli", "tli.robust", 
+    "rmsea", "srmr")
+)
+```
+
+A number of structural equation models were examined to determine which of the models provided the best fit to data.
+The first SEM model (M0) comprised all the observed sub-scales loading on their respective six latent factors: self-compassion, coping, perceived social support, neuroticism, post-traumatic growth, and post-traumatic stress disorder.
+The model M0 included direct paths between two exogenous variables (coping, perceived social support) and the two endogenous variables of interest (post-traumatic growth, and post-traumatic stress disorder).
+It is, therefore, a baseline model.
+Modification indices suggested the inclusion of a residual covariance between the subscales of Self judgment and Self kindness.
+The M0 model showed an unacceptable fit with the data, $\chi^2$(`r fit_meas_m0[2]`) = `r fit_meas_m0[1]`, $\chi^2$/df = `r fit_meas_m0[1] / fit_meas_m0[2]`, CFI = `r fit_meas_m0[3]`, NFI = `r fit_meas_m0[5]`, TLI = `r fit_meas_m0[6]`, RMSEA = `r fit_meas_m0[8]`, and SRMS = `r fit_meas_m0[9]`.
+Overall, the CFA fit indices did not support the model M0 which did not include a regression effect of either self-compassion or neuroticism (Hair et al., 2009; Jackson et al., 2009).
+
+```{r}
+model1 <- "
+  # measurement model
+  
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+          personal_strength + spirituality_changes + 
+          interpersonal_relationships
+  
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ social_support + avoiding_strategies + 
+          positive_attitude + problem_orientation + 
+          transcendent_orientation
+  
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  sc =~ self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  # regressions
+  ptgr ~ cope + soc + sc 
+  ptss ~ cope + soc + sc 
+
+  self_judgment ~~ self_kindness
+  "
+
+fit1 <- lavaan::sem(
+  model1,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+
+anova_m0m1 <- anova(fit1, fit0)
+
+fit_meas_m1 <- fitMeasures(
+  fit1, 
+  c("chisq", "df", "cfi", "cfi.robust", "nfi", "tli", "tli.robust", 
+    "rmsea", "srmr")
+)
+```
+
+The second model (M1) added direct paths between self compassion and the endogenous variables, but without distinguishing the two components of self-compassion.
+A comparison of the model M1 with the model M0 indicated that the model M1 did improve fit, $\Delta \chi^2$(`r anova_m0m1[2, 6]`) = `r round(anova_m0m1[2, 5], 2)`, $p =$ `r round(anova_m0m1[2, 7], 4)`, but still showed an unacceptable fit with the data, $\chi^2$(`r fit_meas_m1[2]`) = `r fit_meas_m1[1]`, $\chi^2$/df = `r fit_meas_m1[1] / fit_meas_m1[2]`, CFI = `r fit_meas_m1[3]`, NFI = `r fit_meas_m1[5]`, TLI = `r fit_meas_m1[6]`, RMSEA = `r fit_meas_m1[8]`, and SRMS = `r fit_meas_m1[9]`.
+
+```{r}
+model1a <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+   
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  sc =~ self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  sc ~~ neuro
+  soc ~~ cope
+  soc ~~ sc
+  soc ~~ neuro
+  cope ~~ sc
+  cope ~~ neuro
+  
+  # regressions
+  ptgr ~ cope + soc + sc 
+  ptss ~ cope + soc + sc 
+  
+  self_judgment ~~ self_kindness
+"
+
+fit1a <- lavaan::sem(
+  model1a,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+
+anova_m0m1a <- anova(fit1a, fit1)
+
+fit_meas_m1a <- fitMeasures(
+  fit1a, 
+  c("chisq", "df", "cfi", "cfi.robust", "nfi", "tli", "tli.robust", 
+    "rmsea", "srmr")
+)
+```
+
+The third model (M1a) attempted of improving the fit of M1 by only considering a subset of dimensions of coping (Positive attitude and Problem orientation), because Coping was poorly defined by such indicators.
+A comparison of the model M1a with the model M1 indicated that the model M1a did improve fit, $\Delta \chi^2$(`r anova_m0m1a[2, 6]`) = `r round(anova_m0m1a[2, 5], 2)`, $p =$ `r round(anova_m0m1a[2, 7], 4)`, but still showed an unacceptable fit with the data, $\chi^2$(`r fit_meas_m1a[2]`) = `r fit_meas_m1a[1]`, $\chi^2$/df = `r fit_meas_m1a[1] / fit_meas_m1a[2]`, CFI = `r fit_meas_m1a[3]`, NFI = `r fit_meas_m1a[5]`, TLI = `r fit_meas_m1a[6]`, RMSEA = `r fit_meas_m1a[8]`, and SRMS = `r fit_meas_m1a[9]`.
+
+```{r}
+model2 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+   # + transcendent_orientation + avoiding_strategies + social_support 
+  
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  psc ~~ nsc
+  psc ~~ neuro
+  nsc ~~ neuro
+  soc ~~ cope
+  soc ~~ nsc
+  soc ~~ psc
+  soc ~~ neuro
+  cope ~~ nsc
+  cope ~~ psc
+  cope ~~ neuro
+  
+  # regressions
+  ptgr ~ cope + soc + nsc + psc 
+  ptss ~ cope + soc + nsc + psc 
+
+  self_judgment ~~ self_kindness
+"
+
+fit2 <- sem(
+  model2,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+
+anova_m2m1a <- anova(fit2, fit1a)
+
+fit_meas_m2 <- fitMeasures(
+  fit2, 
+  c("chisq", "df", "cfi", "cfi.robust", "nfi", "tli", "tli.robust", 
+    "rmsea", "srmr")
+)
+```
+
+The forth model (M2) improved on the structure of M1a by distinguishing between the two components of self-compassion: positive self-compassion and negative self-compassion.
+A comparison of the model M2 with the model M1a indicated that the model M2 did improve fit, $\Delta \chi^2$(`r anova_m2m1a[2, 6]`) = `r round(anova_m2m1a[2, 5], 2)`, $p =$ `r round(anova_m2m1a[2, 7], 4)`.
+The model M2 showed a good fit with the data, $\chi^2$(`r fit_meas_m2[2]`) = `r fit_meas_m2[1]`, $\chi^2$/df = `r fit_meas_m2[1] / fit_meas_m2[2]`, CFI = `r fit_meas_m2[3]`, NFI = `r fit_meas_m2[5]`, TLI = `r fit_meas_m2[6]`, RMSEA = `r fit_meas_m2[8]`, and SRMS = `r fit_meas_m2[9]`.
+
+```{r}
+model3 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+  
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+   # + transcendent_orientation + avoiding_strategies + social_support 
+  
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+  
+  psc ~~ nsc
+  psc ~~ neuro
+  nsc ~~ neuro
+  soc ~~ cope
+  soc ~~ nsc
+  soc ~~ psc
+  soc ~~ neuro
+  cope ~~ nsc
+  cope ~~ psc
+  cope ~~ neuro
+  
+  # regressions
+  ptgr ~ cope + soc + nsc + psc + neuro
+  ptss ~ cope + soc + nsc + psc + neuro
+
+  self_judgment ~~ self_kindness
+"
+
+fit3 <- sem(
+  model3,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+
+anova_m3m2 <- anova(fit3, fit2)
+
+fit_meas_m3 <- fitMeasures(
+  fit3, 
+  c("chisq", "df", "cfi", "cfi.robust", "nfi", "tli", "tli.robust", 
+    "rmsea", "srmr")
+)
+```
+
+```{r semplot, echo=FALSE, message=FALSE, warning=FALSE, fig.cap = "Direct effects of self-compassion to post-traumatic growth (`ptg`) and PTST (`pts`). `cop` = coping, `soc` = perceived social support, `nsc` = negative self compassion, `psc` = positive self compassion, `ner` = nevroticism."}
+# lavaan::standardizedSolution(fit3) %>% 
+#   dplyr::filter(!is.na(pvalue)) %>% 
+#   arrange(desc(pvalue)) %>% 
+#   mutate_if("is.numeric","round",3) %>% 
+#   select(-ci.lower,-ci.upper,-z)
+
+pvalue_cutoff <- 0.05
+
+obj <- semPlot:::semPlotModel(fit3)
+
+# save a copy of the original, so we can compare it later and 
+#  be sure we removed only what we intended to remove
+original_Pars <- obj@Pars
+
+check_Pars <- obj@Pars %>% 
+  dplyr::filter(!(edge %in% c("int","<->") | lhs == rhs)) 
+# this is the list of paramater to sift thru
+
+keep_Pars <- obj@Pars %>% 
+  dplyr::filter(edge %in% c("int","<->") | lhs == rhs) 
+# this is the list of paramater to keep asis
+
+test_against <- lavaan::standardizedSolution(fit3) %>% 
+  dplyr::filter(
+    pvalue < pvalue_cutoff, rhs != lhs)
+
+test_against_rev <- test_against %>% 
+  rename(rhs2 = lhs,
+         lhs = rhs) %>% 
+  rename(rhs = rhs2)
+# for some reason, the rhs and lhs are reversed in the 
+# standardizedSolution() output, for some of the values
+
+checked_Pars <-
+    check_Pars %>% 
+  semi_join(test_against, by = c("lhs", "rhs")) %>% 
+  bind_rows(
+        check_Pars %>% 
+          semi_join(test_against_rev, by = c("lhs", "rhs"))
+    )
+
+# I'll have to reverse it myself, and test against both orders
+obj@Pars <- keep_Pars %>% 
+  bind_rows(checked_Pars)
+
+#let's verify by looking at the list of the edges we removed from the object
+# anti_join(original_Pars, obj@Pars)
+
+semPaths(
+  obj, 
+  "col",
+  "std", 
+  rotation = 1,
+  groups = "latents", 
+  pastel = TRUE,
+  residuals = FALSE,
+  structural = TRUE,
+  curvature = 5,
+  edge.width = 2,
+  edge.label.cex = 1.3,
+  mar = c(4, 1, 14, 1)
+)
+```
+
+The fifth model (M3) attempted to improve on the structure of M2 by adding the direct paths between neuroticism and the two outcome variables.
+A comparison of the model M3 with the model M2 indicated that the model M3 did not improve fit, $\Delta \chi^2$(`r anova_m3m2[2, 6]`) = `r round(anova_m3m2[2, 5], 2)`, $p =$ `r round(anova_m3m2[2, 7], 4)`, with the following fit indices: $\chi^2$(`r fit_meas_m3[2]`) = `r fit_meas_m3[1]`, $\chi^2$/df = `r fit_meas_m3[1] / fit_meas_m3[2]`, CFI = `r fit_meas_m3[3]`, NFI = `r fit_meas_m3[5]`, TLI = `r fit_meas_m3[6]`, RMSEA = `r fit_meas_m3[8]`, and SRMS = `r fit_meas_m3[9]`.
+The structural component of model M3 is presented in Figure \@ref(fig:semplot) (only the statistical significant path coefficients that the $\alpha$ = 0.5 level are shown).
+
+```{r}
+model4 <- "
+
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ cope + soc + psc + neuro
+  ptss ~ cope + soc + psc + neuro
+  
+  # covariances
+  self_judgment ~~ self_kindness
+"
+
+fit4 <- sem(
+  model4,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+
+anova_m4m3 <- anova(fit4, fit3)
+
+fit_meas_m4 <- fitMeasures(
+  fit4, 
+  c("chisq", "df", "cfi", "cfi.robust", "nfi", "tli", "tli.robust", 
+    "rmsea", "srmr")
+)
+```
+
+```{r}
+model5 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ cope + soc + nsc + neuro
+  ptss ~ cope + soc + nsc + neuro
+  
+  # covariances
+  self_judgment ~~ self_kindness
+"
+
+fit5 <- sem(
+  model5,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+
+anova_m5m3 <- anova(fit5, fit3)
+
+fit_meas_m5 <- fitMeasures(
+  fit5, 
+  c("chisq", "df", "cfi", "cfi.robust", "nfi", "tli", "tli.robust", 
+    "rmsea", "srmr")
+)
+```
+
+Having obtained a model with a good fit to the data, with the following models we tested additional specific substantive questions.
+Model 4 removed from model M3 only the direct paths of the negative component of self-compassion.
+This modification produced a significant decrease of fit, $\Delta \chi^2$(`r anova_m4m3[2, 6]`) = `r round(anova_m4m3[2, 5], 2)`, $p =$ `r round(anova_m4m3[2, 7], 4)`.
+Model 5 removed from model M3 only the direct paths of the positive component of self-compassion.
+Also this change produced a significant decrease of fit, $\Delta \chi^2$(`r anova_m5m3[2, 6]`) = `r round(anova_m5m3[2, 5], 2)`, $p =$ `r anova_m5m3[2, 7]`.
+
+```{r}
+model10 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ dg_cope*cope + dg_soc*soc + dg_neuro*neuro
+  ptss ~ ds_cope*cope + ds_soc*soc + ds_neuro*neuro
+
+  nsc ~ nsc_cope*cope + nsc_soc*soc + nsc_neuro*neuro
+  psc ~ psc_cope*cope + psc_soc*soc + psc_neuro*neuro
+  
+  ptgr ~ ig_nsc*nsc + ig_psc*psc 
+  ptss ~ is_nsc*nsc + is_psc*psc
+  
+  # covariances
+  self_judgment ~~ self_kindness
+"
+
+fit10 <- sem(
+  model10,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+
+fit_meas_m10 <- fitMeasures(
+  fit10, 
+  c("chisq", "df", "cfi", "cfi.robust", "nfi", "tli", "tli.robust", 
+    "rmsea", "srmr")
+)
+```
+
+We then considered a different also considered a mediation model (M6) with coping, perceived social support, and neuroticism as endogeneous variable, the positive and negative components of self compassion as mediator variables, and post-traumatic growth and post-traumatic stress disorder as endogeneous variables.
+The fit of model M6 was very good with the following indices: $\chi^2$(`r fit_meas_m10[2]`) = `r fit_meas_m10[1]`, $\chi^2$/df = `r fit_meas_m10[1] / fit_meas_m10[2]`, CFI = `r fit_meas_m10[3]`, NFI = `r fit_meas_m10[5]`, TLI = `r fit_meas_m10[6]`, RMSEA = `r fit_meas_m10[8]`, and SRMS = `r fit_meas_m10[9]`.
+The structural component of model M6 is presented in Figure \@ref(fig:mediation-model) (only the statistical significant path coefficients at the $\alpha$ = 0.5 level are shown).
+
+```{r mediation-model, echo=FALSE, message=FALSE, warning=FALSE, fig.cap = "Structural component of a SEM model with the positive and negative components of self-compassion as mediators between coping, perceived social support, and neuroticism, as exogeneous variables, and post-traumatic growth (`ptg`) and PTST (`pts`), as endogeneous variables. `cop` = coping, `soc` = perceived social support, `nsc` = negative self compassion, `psc` = positive self compassion, `ner` = nevroticism."}
+std_solution <- lavaan::standardizedSolution(fit10) %>% 
+  mutate_if("is.numeric","round",3) %>% 
+  filter(op == "~" | op == "~~")
+
+lay <- get_layout(
+  "", "cope", "soc",  "neuro", "",
+  "nsc", "", "", "", "psc",
+  "", "ptss", "", "ptgr", "",
+  rows = 3)
+
+graph_data <- prepare_graph(model = fit10, layout = lay)
+foo <- edges(graph_data) 
+foo1 <- foo[c(2, 7, 9:10, 12, 14, 15, 24:27), ]
+
+graph_data$edges <- foo1
+
+graph_data[[1]]$label <- 
+  round(std_solution[c(2, 7, 9, 10, 12, 14, 15, 24:27), 4], 2)
+
+plot(graph_data)
+```
+
+```{r}
+model11 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  sc =~ self_judgment + isolation + over_identification +
+        self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ dg_cope*cope + dg_soc*soc + dg_neuro*neuro
+  ptss ~ ds_cope*cope + ds_soc*soc + ds_neuro*neuro
+
+  sc ~ sc_cope*cope + sc_soc*soc + sc_neuro*neuro
+
+  ptgr ~ ig_nsc*sc  
+  ptss ~ is_nsc*sc 
+  
+  # covariances
+  self_judgment ~~ self_kindness
+"
+
+fit11 <- sem(
+  model11,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE
+)
+
+fit_meas_m11 <- fitMeasures(
+  fit11, 
+  c("chisq", "df", "cfi", "cfi.robust", "nfi", "tli", "tli.robust", 
+    "rmsea", "srmr")
+)
+
+anova_m11m10 <- anova(fit11, fit10)
+```
+
+Model M7 was identical to model M6, except that self-compassion was considered as a single latent variable.
+The fact that we did not distinguish between the positive and negative components of self-compassion produced a significant decrease of fit, $\Delta \chi^2$(`r anova_m11m10[2, 6]`) = `r round(anova_m11m10[2, 5], 2)`, $p =$ `r anova_m11m10[2, 7]`.
+
+```{r}
+model12 <- "
+  # post-traumatic growth
+  ptgr =~ life_appreciation + new_possibilities + 
+         personal_strength + spirituality_changes + 
+         interpersonal_relationships
+         
+  # ptsd
+  ptss =~ avoiding + intrusivity + iperarousal
+  
+  # coping
+  cope =~ positive_attitude + problem_orientation 
+
+  # perceived social support
+  soc =~ family + friends + significant_other
+  
+  # self-compassion
+  nsc =~ self_judgment + isolation + over_identification
+  psc =~ self_kindness + common_humanity + mindfulness
+  
+  # neuroticism
+  neuro =~ negative_affect + self_reproach
+
+  # regressions
+  ptgr ~ dg_cope*cope + dg_soc*soc 
+  ptss ~ ds_cope*cope + ds_soc*soc 
+
+  nsc ~ nsc_cope*cope + nsc_soc*soc 
+  psc ~ psc_cope*cope + psc_soc*soc 
+  neuro ~ n_cope*cope + n_soc*soc
+  
+  ptgr ~ ig_nsc*nsc + ig_psc*psc + ig_neuro*neuro
+  ptss ~ is_nsc*nsc + is_psc*psc + is_neuro*neuro
+  
+  # covariances
+  self_judgment ~~ self_kindness
+"
+
+fit12 <- sem(
+  model12,
+  data = clean_dat,
+  estimator = "MLM",
+  std.lv = TRUE,
+  optim.dx.tol = TRUE
+)
+
+anova_m12m10 <- anova(fit12, fit10)
+```
+
+In a further model comparison, we considered the model M8, which is identical to model M6, except that neuroticism is used as a mediating variable, together with the two components of self-compassion, instead of being an exogenous variable.
+The fit of model M8 was very bad and statistically significantly worse than the fit of model M6, $\Delta \chi^2$(`r anova_m12m10[2, 6]`) = `r round(anova_m12m10[2, 5], 2)`, $p =$ `r anova_m12m10[2, 7]`.
+We take this as indicating that neuroticism is unlikely to play the role of a mediating variable, together with the two components of self compassion, between the variables presently considered.
+
+```{r}
+fit3_ml <- sem(
+  model3,
+  data = clean_dat,
+  std.lv = TRUE
+)
+
+fit10_ml <- sem(
+  model10,
+  data = clean_dat,
+  std.lv = TRUE
+)
+
+vuong_out <- vuongtest(fit3_ml, fit10_ml)
+icci_out <- icci(fit3_ml, fit10_ml)
+
+```
+
+We compared models M3 and M6 with the Vuong closeness test, which indicated that they were too close too be distinguished, $p$ = `r vuong_out$p_omega`.
+However, the confidence intervals for the difference in the models' AIC and BIC statistics showed an advantage for the mediation model M6: 95% C.I.
+of AIC difference = (`r round(icci_out$AICci[1], 3)`, `r round(icci_out$AICci[2], 3)`) and 95% C.I.
+of BIC difference = (`r round(icci_out$BICci[1], 3)`, `r round(icci_out$BICci[2], 3)`).
+
+In order to examine the mediation structure, we compute the bias-corrected bootstrapped confidence interval with 10,000 samples.
+Such approach does not rely on distribution assumptions and can be used when the assumptions of large sample size and multivariate normality may not hold (Ryu and Cheong, 2017).
+If the confidence intervals do not include zero, then the null hypothesis is rejected, and the mediation effect is non-zero.
+
+```{r mediation-tab}
+boot_mediation <- readRDS("boot_mediation.Rds")
+
+foo <- boot_mediation[-c(5, 10, 15), c(1, 5, 6, 9:10)] 
+
+now_names <- c(
+   "Ind. eff. coping -> PTSS", 
+   "Ind. eff. coping -> PTG", 
+   "Tot. eff. coping -> PTSS", 
+   "Tot. eff. coping -> PTG", 
+   "Ind. eff. soc. supp. -> PTSS",   
+   "Ind. eff. soc. supp. -> PTG", 
+   "Tot. eff. soc. supp. -> PTSS", 
+   "Tot. eff. soc. supp. -> PTG", 
+   "Ind. eff. neuro. -> PTSS", 
+   "Ind. eff. neuro. -> PTG",  
+   "Tot. eff. neuro. -> PTSS", 
+   "Tot. eff. neuro. -> PTG"
+)
+
+foo$lhs <- now_names
+
+foo %>% 
+  knitr::kable(
+    col.names = c("Effect", "Estimate", "S.E.", "C.I. lower", "C.I. upper"),
+    digits = 3,
+    row.names = FALSE,
+    booktabs = TRUE,
+    caption = 'Indirect and total effects for the three endogeneous variables Coping (coping), Perceived social support (soc. supp.), and Neuroticism (neuro.) on post traumatic stress (PTSS) and post traumatic growth (PTG). S.E. = standard error; `C.I. lower` and `C.I. upper` = lower and upper limits of the 95\\% bootstrap confidence interval.')
+```
+
+We found no (statistically significant) direct effect of coping on PTSS nor on PTG.
+Conversely, we found evidence of an indirect effect of coping on PTG, with a total effect of 0.238, 95% CI = [0.127, 0.355].
+This suggests a fully mediated effect of coping on PTG.
+Instead, there was no strong evidence of a mediated effect of coping on PTSS because the confidence interval for the indirect effect included zero, 95% CI = [-0.026, 0.219].
+
+There was no clear evidence of a direct effect of perceived social support on PTSS, nor evidence of an indirect effect, 95% CI = [-0.057, 0.037].
+Instead, we found evidence of a direct effect of perceived social support on PTG, nor evidence of an indirect effect, 95% CI = [-0.023, 0.031].
+Although the 95% CI of the total effect did not include zero [0.085, 0.282], it is difficult to interpret.
+
+Finally, we found no clear evidence of a direct effect of neuroticism on PTSS, but we found evidence of an indirect effect, 95% CI = [0.283, 0.755], with a total effect of 0.571, 95% CI = [0.451, 0.711].
+This suggests that the effect of neuroticism on PTSS is fully mediated.
+Conversely, we found no clear evidence of a direct effect of neuroticism on PTG, nor evidence of an indirect effect of neuroticism on PTG, with a total effect of 0.032, 95% CI = [-0.184, 0.232].
+
+# Discussion
+
+Main points.
+
+for a recent development, see also @gu2020development
+
+-   We found evidence that a model with a single component of SC is inadequate, whereas a model which distinguishes the positive and negative component of SC is more adequate to account for the data.
+
+-   We found evidence of a better fit for a model which adds the positive component of SC to a model with only the negative component of SC.
+
+-   Consistently with (ref), we found evidence that SC is better understood as a mediation variable.
+
+-   We found evidence that a model which include nevroticism is more adequate than a model with only SC.
+
+In conclusion, we found not evidence that the construct of SC can be subsumed by the constructs of negative affect and nevroticism.
+Instead, we found evidence, consistently with (ref), that SC plays a mediating role between coping, perceived social support, and nevroticism, on the one side, and PTSS and PTG, on the other.
+Importantly, we also found that nevroticism and SC are both important in accounting for PTSS and PTG -- in other words, we cannot reduce SC to nevroticism.
+Instead, our data suggest that the two components of SC and nevroticism play a different structural role in a nomological network having PTSS and PTG as endogenous variables.
+
+\newpage
+
+# References
+
+```{=tex}
+\begingroup
+\setlength{\parindent}{-0.5in}
+\setlength{\leftskip}{0.5in}
+```
+::: {#refs custom-style="Bibliography"}
+:::
+
+```{r create_r-references}
+r_refs(file = "self-compassion.bib")
+```
+
+\endgroup
+
+\renewcommand{\appendixname}{Supplementary Information}
+
+```{r render_appendix, include = FALSE}
+render_appendix("appendix.Rmd")
+```
+
+---
+appendix: "appendix.Rmd"
+---
+
+

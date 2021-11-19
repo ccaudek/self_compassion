@@ -1,0 +1,3 @@
+"0","```r
+cor.test(neg_self_compassion, avoiding_strategies, na.rm = TRUE)
+```"

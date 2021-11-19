@@ -1,0 +1,7 @@
+"0","```r
+df8 <- data.frame(
+  extraversion, 
+  ptg, 
+  pos_self_compassion
+)
+```"
